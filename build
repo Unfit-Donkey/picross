@@ -1,0 +1,1 @@
+emcc -O2 picross.cpp --bind -o picrossCpp.js
