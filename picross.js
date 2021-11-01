@@ -7,7 +7,7 @@ class Puzzle {
         this.calculateSizes();
         this.shape = new Array(this.shapeSize);
         this.hintsTotal = new Array(this.maxFaceSize * dimension);
-        this.hintsGaps = new Array(this.maxFaceSize * dimension);
+        this.hintsPieces = new Array(this.maxFaceSize * dimension);
     }
     calculateSizes() {
         this.shapeSize = 1;
@@ -48,26 +48,29 @@ class Puzzle {
             out += position[i] * sliceSize;
             sliceSize *= this.size[i];
         }
+        return out;
     }
     getRow(position) {
         let dim = position.indexOf(-1);
         let out = [];
         let spacing = 1;
-        for(let i = 0; i < dim; i++) spacing *= size[i];
+        for(let i = 0; i < dim; i++) spacing *= this.size[i];
         let start = this.collapsePos(position) + spacing;
         for(let i = 0; i < this.size[dim]; i++) {
-            out[i] = shape[start + spacing * i];
+            out[i] = this.shape[start + spacing * i];
         }
         return out;
     }
     getCell(position) {
+        const pos = p5Vector(position);
         let flatPos = 0;
         let sliceSize = 1;
-        for(let i = 0; i < dimension; i++) {
-            flatPos += position[i] * sliceSize;
+        for(let i = 0; i < this.dimension; i++) {
+            flatPos += pos[i] * sliceSize;
+            if(pos[i] > this.size[i] || pos[i] < 0) return -1;
             sliceSize *= this.size[i];
         }
-        return flatPos;
+        return this.shape[flatPos];
     }
     sliceUp(dims) {
         let out = [];
@@ -118,11 +121,17 @@ class Puzzle {
 
     }
 }
+function p5Vector(cell) {
+    if(typeof cell.x != "undefined") {
+        return [cell.x, cell.y, cell.z];
+    }
+    else return cell;
+}
 function getCell(shape, position) {
     let newShape = shape;
     for(let i = 0; i < position.length; i++) newShape = shape[position[i]];
     return newShape;
 }
-const cell_unsure = 0;
 const cell_broken = 1;
 const cell_colored = 2;
+const cell_unsure = 3;
