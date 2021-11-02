@@ -3,8 +3,9 @@
 #include <string>
 #include <cstring>
 #include <vector>
-//#include <emscripten.h>
-//#include <emscripten/bind.h>
+#include <emscripten.h>
+#include <emscripten/emscripten.h>
+#include <emscripten/bind.h>
 
 using namespace std;
 typedef enum Cell : char {
@@ -196,15 +197,10 @@ bool possibilityMatchesRow(Cell* row, Cell* possibility, int len) {
     return true;
 }
 void solveRow(int total, int pieces, int rowLength, Cell* row, Cell* out) {
-    int margin = rowLength - total - (pieces - 1);
     //Generate possibilities for broken run
     vector<SpacingPossibility> bkn = spacePossibilities(rowLength - total, pieces + 1, true, true);
-    //cout << "Broken possibilities: " << endl;
-    //for(int i = 0;i < bkn.size();i++) bkn[i].print();
     //Generate possibilities for colored runs
     vector<SpacingPossibility> crd = spacePossibilities(total, pieces, false, false);
-    //cout << "Colored possibilities: " << endl;
-    //for(int i = 0;i < crd.size();i++) crd[i].print();
     //Go through all possibilities
     for(int b = 0;b < bkn.size();b++) {
         //Check if either all unsure or matches current row to break
@@ -230,33 +226,34 @@ void solveRow(int total, int pieces, int rowLength, Cell* row, Cell* out) {
         }
     }
 }
-
-
-int main() {
-    int length, total, pieces;
-    cout << "Enter row length: ";
-    cin >> length;
-    cout << "Enter cell count in row: ";
-    cin >> total;
-    cout << "Enter pieces in row: ";
-    cin >> pieces;
-    string rowInput;
-    cout << "Enter already existing row: ";
-    cin.ignore();
-    getline(cin, rowInput);
-    Cell row[10];
-    memset(row, 3, 10);
-    for(int i = 0;i < rowInput.size();i++) {
-        char c = rowInput[i];
-        if(c == ' ') row[i] = broken;
-        if(c == '+') row[i] = painted;
+void stringToRow(string str, Cell* row, int len) {
+    memset(row, 3, len);
+    for(int i = 0;i < str.size();i++) {
+        if(str[i] == ' ') row[i] = broken;
+        if(str[i] == '+') row[i] = painted;
     }
-    Cell out[10];
-    memset(out, 0, 10);
-    solveRow(total, pieces, length, row, out);
-    cout << "Row: \"";
-    char types[4] = { 'E',' ','+','?' };
-    for(int i = 0;i < length;i++) cout << types[int(out[i])];
-    cout << "\"\n";
-
+};
+string rowToString(Cell* row, int len) {
+    string out(len, ' ');
+    char types[4] = { 'E', ' ', '+', '?' };
+    for(int i = 0;i < len;i++) {
+        out[i] = types[int(row[i])];
+    }
+    out[len] = 0;
+    return out;
+}
+string solveRowJS(int total, int pieces, int rowLength, string row) {
+    Cell rowCells[rowLength];
+    Cell out[rowLength];
+    stringToRow(row, rowCells, rowLength);
+    memset(out, 0, rowLength);
+    solveRow(total, pieces, rowLength, rowCells, out);
+    solveRow(5,4,2,rowCells,out);
+    return rowToString(out, rowLength);
+}
+EMSCRIPTEN_BINDINGS(a) {
+    emscripten::function("solveRow", &solveRowJS);
+}
+int main() {
+    return 0;
 }

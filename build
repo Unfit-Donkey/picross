@@ -1,1 +1,1 @@
-emcc -O2 picross.cpp --bind -o picrossCpp.js
+emcc --bind src/picross.cpp --bind -o src/compiled/picrossCpp.js
