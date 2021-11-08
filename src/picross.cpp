@@ -26,53 +26,18 @@ private:
     int maxFaceSize;
     int shapeSize;
 public:
-    Puzzle(int dim, int* siz, string nam) {
-        dimension = dim;
-        free(size);
-        size = (int*)calloc(dim, sizeof(int));
-        memcpy(size, siz, dim * sizeof(int));
-        name = nam;
-        int minimumRowLength = 10000;
-        shapeSize = 1;
-        for(int i = 0;i < dim;i++) {
-            shapeSize *= size[i];
-            if(size[i] < minimumRowLength) size[i] = minimumRowLength;
-        }
-        maxFaceSize = shapeSize / minimumRowLength;
-        free(shape);
-        shape = (Cell*)calloc(shapeSize, sizeof(Cell));
-    }
-    string toString() {
-        // NAME~DIMENSION~SIZE~SHAPE~HINTS
-        string out = name + "~" + std::to_string(dimension) + "~";
-        for(int i = 0;i < dimension;i++) {
-            out += ('A' + size[i]);
-        }
-        //Shape
-        out += "~";
-        for(int i = 0;i < shapeSize;i++) {
-            if(shape[i] == broken) out += " ";
-            else if(shape[i] == unsure) out += "-";
-            else if(shape[i] == painted) out += "+";
-        }
-        //Hints
-        out += "~";
-        for(int i = 0;i < maxFaceSize * dimension;i++) {
-            out += ('A' + hints[i].total) + ('A' + hints[i].pieceCount);
-        }
-        return out;
-    }
-    void fromString(string str) {
+    Puzzle(string str) {
         string strs[10];
         int currentIndex = 0;
         int i = 0;
         //Split by tildes
         int lastTilde = -1;
+        int x = 0;
         for(int i = 0;i < str.size() + 1;i++) {
             if(str[i] == '~' || str[i] == 0) {
-                strs[i] = "";
-                strs[i].append(str, lastTilde + 1, i - lastTilde - 1);
+                strs[x] = str.substr(lastTilde + 1, i - lastTilde - 1);
                 lastTilde = i;
+                x++;
             }
         }
         //Set name
@@ -82,12 +47,13 @@ public:
         free(size);
         size = (int*)calloc(dimension, sizeof(int));
         for(int i = 0;i < strs[2].size();i++) size[i] = strs[2][i] - 'A';
+        cout << size[0] << endl;
         //Reconstruct shape size
         int minimumRowLength = 10000;
         shapeSize = 1;
         for(int i = 0;i < dimension;i++) {
             shapeSize *= size[i];
-            if(size[i] < minimumRowLength) size[i] = minimumRowLength;
+            if(size[i] < minimumRowLength) minimumRowLength = size[i];
         }
         maxFaceSize = shapeSize / minimumRowLength;
         //Copy shape
@@ -106,6 +72,92 @@ public:
             hints[i].pieceCount = strs[4][i + 1] - 'A';
         }
     }
+    Puzzle(int dim, int* siz, string nam) {
+        dimension = dim;
+        free(size);
+        size = (int*)calloc(dim, sizeof(int));
+        memcpy(size, siz, dim * sizeof(int));
+        name = nam;
+        int minimumRowLength = 10000;
+        shapeSize = 1;
+        for(int i = 0;i < dim;i++) {
+            shapeSize *= size[i];
+            if(size[i] < minimumRowLength) size[i] = minimumRowLength;
+        }
+        maxFaceSize = shapeSize / minimumRowLength;
+        free(shape);
+        shape = (Cell*)calloc(shapeSize, sizeof(Cell));
+    }
+    void solve() {
+
+    }
+    void generateHints() {
+        free(hints);
+        hints = (Hint*)calloc(maxFaceSize * dimension, sizeof(Hint));
+        for(int i = 0;i < shapeSize;i++) {
+            for(int dim = 0;dim < dimension;dim++) {
+                int rowPos = getRowPosition(i, dim);
+                //To prevent duplicate calculations
+                if(hints[rowPos + dim * maxFaceSize].pieceCount != 0) continue;
+                int spacing = 1;
+                for(int x = 0;x < dimension;x++) spacing *= size[x];
+                //Set i to first cell in the row
+                i = ((i / spacing) / size[dim]) * spacing * size[dim] + i % spacing;
+                int total = 0, pieces = 0, prev = broken;
+                for(int x = 0;x < size[dim];x++) {
+                    int cell = i + x * spacing;
+                    if(shape[cell] == painted) {
+                        total++;
+                        if(prev == broken) pieces++;
+                    }
+                    prev = shape[cell];
+                }
+                hints[rowPos + dim * maxFaceSize].pieceCount = pieces;
+                hints[rowPos + dim * maxFaceSize].total = total;
+            }
+        }
+    }
+    int getRowPosition(int pos, int direction) {
+        //Example:
+        // size = {5,2,3,4}
+        // pos = 48, direction = 2
+        // belowSize = 10
+        // below = 8
+        // above = 10
+        int belowSize = 1;
+        for(int i = 0;i < direction;i++) belowSize *= size[i];
+        int below = pos % belowSize;
+        int above = (pos / belowSize / size[direction]) * belowSize;
+        return below + above;
+    }
+    void posToPositionArray(int pos, int* out) {
+        for(int i = 0;i < dimension;i++) {
+            out[i] = pos % size[i];
+            pos /= size[i];
+        }
+
+    }
+    string toString() {
+        // NAME~DIMENSION~SIZE~SHAPE~HINTS
+        string out = name + "~" + std::to_string(dimension) + "~";
+        for(int i = 0;i < dimension;i++) {
+            cout << size[i] << endl;
+            out += string(1, 'A' + size[i]);
+        }
+        //Shape
+        out += "~";
+        for(int i = 0;i < shapeSize;i++) {
+            if(shape[i] == broken) out += " ";
+            else if(shape[i] == unsure) out += "-";
+            else if(shape[i] == painted) out += "+";
+        }
+        //Hints
+        out += "~";
+        for(int i = 0;i < maxFaceSize * dimension;i++) {
+            out += string(1, char('A' + hints[i].total)) + string(1, char('A' + hints[i].pieceCount));
+        }
+        return out;
+    }
     int collapsePosition(int* position) {
         int sliceSize = 1;
         int out = 0;
@@ -118,9 +170,15 @@ public:
     Cell getCell(int* position) {
         return shape[collapsePosition(position)];
     }
-    Hint getHint(int* position, int dimension) {
-
-        Hint out;
+    Hint getHint(int* position, int direction) {
+        int s = 1;
+        int pos = 0;
+        for(int i = 0;i < dimension;i++) {
+            if(i == direction) continue;
+            pos += position[i] * s;
+            s *= size[i];
+        }
+        Hint out = hints[maxFaceSize * direction + pos];
         return out;
     }
     void setCell(int* position, Cell set) {
@@ -147,6 +205,7 @@ public:
         }
     }
 };
+Puzzle* puz = new Puzzle("A~1~B~ ~AB");
 typedef struct SpacingPossiblity {
     unsigned char space[8];
     void print() {
@@ -248,11 +307,26 @@ string solveRowJS(int total, int pieces, int rowLength, string row) {
     stringToRow(row, rowCells, rowLength);
     memset(out, 0, rowLength);
     solveRow(total, pieces, rowLength, rowCells, out);
-    solveRow(5,4,2,rowCells,out);
     return rowToString(out, rowLength);
+}
+string getPuzzle() {
+    return puz->toString();
+}
+void setPuzzle(string str) {
+    puz = new Puzzle(str);
+}
+void doHints() {
+    puz->generateHints();
+}
+void solveCurrentPuzzle() {
+    puz->solve();
 }
 EMSCRIPTEN_BINDINGS(a) {
     emscripten::function("solveRow", &solveRowJS);
+    emscripten::function("getPuzzle", &getPuzzle);
+    emscripten::function("setPuzzle", &setPuzzle);
+    emscripten::function("generateHints", &doHints);
+    emscripten::function("solve", &solveCurrentPuzzle);
 }
 int main() {
     return 0;

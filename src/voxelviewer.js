@@ -1,60 +1,100 @@
-let curPuzzle = new Puzzle(3, [4, 3, 4], "Basic puzzle");
-curPuzzle.shape = [3, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 3, 3, 1, 3, 1, 3, 1, 3, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 1, 1, 1, 1, 3, 3, 3, 1, 3, 1, 3, 1, 3, 1, 3, 1, 3, 1, 3, 1, 3, 1, 3, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 3, 3, 3, 3];
-curPuzzle.hintsTotal = [15, 2, 5, 1, 5, 1, 2, 10, 9, 2, 3, 4, 1, 2, 59, 1, 2, 4, 1, 2, 5, 6, 19, 1, 24, 21, 2, 5, 61, 7, 1, 2, 5, 2, 3, 4, 5, 6, 1, 2, 34, 4, 6, 1, 7, 1, 5, 3, 6, 3, 46, 3, 7, 3, 3, 1, 2, 2, 3, 1, 2, 3, 2, 1, 2, 3,];
-curPuzzle.hintsPieces = [1, 1, 1, 1, 1, 2, 3, 1, 0, 1, 4, 1, 3, 4, 0, 1, 1, 0, 2, 2, 1, 1, 0, 4, 1, 1, 1, 0, 1, 1, 0, 2, 2, 1, 2, 0, 1, 2, 1, 0, 2, 1, 1, 0, 1, 0, 3, 2, 1, 1, 0, 1, 1, 3, 2, 0, 1, 2, 1, 0, 3, 0, 2, 1, 1, 0, 2, 1, 3, 1, 0, 1, 1];
-let shape = [
-    0, 2, 2, 2,
-    2, 2, 2, 2,
+import * as THREE from "../three.js/build/three.module.js";
+import {Puzzle} from "./picross.js";
+const cell_broken = 1;
+const cell_colored = 2;
+const cell_unsure = 3;
+window.THREE = THREE;
+window.curPuzzle = Puzzle.fromString('Basic puzzle~3~MHF~+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------~BBBBAAAAAAAAAABBCBCBGBGBCCCCBBFCFCJBGBAAAABBCBCBGBGBCCCCBBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAACBHBCBCBCBCBEBAAAAAAAABBCBEBCBCBCBCBCBBBCCEBCBAACBHBCBCBCBCBEBAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAECAAAAAAAAAAAAAABBAAAADBFBAAAAAAAAAAAABBBBBBBBDBDBAAAAAAAAAAAAAABBBBAAAADBDBDBDBDBDBBBBBBBAAAAAADBDBDBDBDBDBAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAACCAAAAAAAACCAAAAAAAA');
+window.fullPuzzle = Puzzle.fromString('Basic puzzle~3~MHF~------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------~BBBBAAAAAAAAAABBCBCBGBGBCCCCBBFCFCJBGBAAAABBCBCBGBGBCCCCBBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAACBHBCBCBCBCBEBAAAAAAAABBCBEBCBCBCBCBCBBBCCEBCBAACBHBCBCBCBCBEBAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAECAAAAAAAAAAAAAABBAAAADBFBAAAAAAAAAAAABBBBBBBBDBDBAAAAAAAAAAAAAABBBBAAAADBDBDBDBDBDBBBBBBBAAAAAADBDBDBDBDBDBAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAACCAAAAAAAACCAAAAAAAA');
+curPuzzle = Puzzle.fromString('Basic puzzle~3~MHF~                                                              +           +           +    +      +    +      ++++++      ++++++     ++          ++           +                                   ++++++      +++++++++ +++       ++ ++      +++          +   +    +      +    +      ++++++      ++++++     ++          ++           +                                                                       +           +         ~AAAAAAAAAABBBBCCCCGBGBCBCBBBAAAAGBJBFCFCBBCCCCGBGBCBCBBBAAAAAAAAAABBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAACBHBCBCBCBCBEBAAAAAAAABBCBEBCBCBCBCBCBBBCCEBCBAACBHBCBCBCBCBEBAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAADBDBDBDBDBDBAAAAAAAAAAAADBDBDBDBDBDBBBBBBBAABBDBDBAAAAAAAAAAAAAABBBBAADBFBAAAAAAAAAAAABBBBBBAAAAECAAAAAAAAAAAAAABBAA');
 
-    2, 0, 0, 0,
-    0, 2, 0, 2,
-
-    2, 1, 2, 0,
-    1, 2, 0, 2,
-
-    1, 2, 0, 1,
-    2, 0, 0, 1,
-
-    2, 0, 0, 0,
-    2, 1, 0, 0,
-
-    0, 1, 2, 0, 2, 0, 2, 1, 1, 2, 0, 2, 2, 2, 1, 0, 0, 2, 0, 1, 0, 0, 2, 0, 1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 1, 1, 1, 1, 2, 0, 0, 2, 2, 1, 2, 0, 0, 0, 0, 0, 1, 2, 2, 0, 0, 0, 1, 0, 0, 0, 0, 1, 2, 2, 0, 0, 2, 1, 2, 2, 1, 2, 0, 0, 0];
-let shapeSize = [4, 3, 2, 2];
-var font;
-function preload() {
-    font = loadFont("lib/robotoMono.ttf");
-}
-function setup() {
-    //Create orthogonal 3d canvas with the size of the window
-    createCanvas(windowWidth, windowHeight, WEBGL);
-    ortho(-width / 2, width / 2, -height / 2, height / 2, -100000, 10000);
-    updateRotation();
+window.scene = {
+    camera: null,
+    obj: null,
+    renderer: null,
+    voxels: [],
+    materials: {
+        unsure: new THREE.MeshStandardMaterial({color: 0xffffff}),
+        painted: new THREE.MeshStandardMaterial({color: 0xbbff99, metalness: 0.5, roughness: 0}),
+        selected: new THREE.MeshStandardMaterial({color: 0xff0000}),
+        wire: new THREE.LineBasicMaterial({color: 0x444444,linewidth:2}),
+        text: [],
+        textUnsure: [],
+        textPainted: [],
+    },
+    geometry: {
+    },
+    debug: {
+    },
+    cardinal: [],
+    input: {
+        xRot: 0,
+        yRot: 0,
+        boxSize: 0,
+        mouseX: 0,
+        pmouseX: 0,
+        mouseY: 0,
+        pmouseY: 0,
+        selectedBlock: -1,
+        latestEvent: {},
+    }
+};
+window.cameraPos;
+document.body.onload = function () {
+    createSceneBasics();
+    createVoxelScene();
+    resize();
+    window.addEventListener("resize",resize);
     generateSidesVisible();
+    updateRotation();
+
     render();
 }
-var windowResized = setup;
-var pmouseX;
-var pmouseY;
-var selectedBlock = -1;
-var xRot = -0.31799999999999995, yRot = 0.270000000000001350;
-var mouseSpeed = 0.006;
-var cameraPos;
-const boxScale = 50;
+function resize() {
+    //Compute camera variables
+    let frustumSize = 10;
+    let aspectRatio = window.innerWidth / window.innerHeight;
+    let aspect = Math.sqrt(aspectRatio);
+    scene.input.boxSize = window.innerWidth / 2 / frustumSize / aspect;
+    //Change camera viewport
+    scene.camera.left = -frustumSize * aspect;
+    scene.camera.right = frustumSize * aspect;
+    scene.camera.top = frustumSize / aspect;
+    scene.camera.bottom = -frustumSize / aspect;
+    scene.camera.updateMatrixWorld();
+    scene.camera.updateProjectionMatrix();
+    //Update cardinal directions
+    for(let i = 0; i < 3; i++) {
+        scene.cardinal[i].position.set(scene.camera.left + 1, scene.camera.bottom + 1, 0);
+    }
+    scene.renderer.setSize(window.innerWidth, window.innerHeight, true);
+}
+onmousemove = function (e) {
+    scene.input.pmouseX = scene.input.mouseX;
+    scene.input.pmouseY = scene.input.mouseY;
+    scene.input.mouseX = e.clientX - window.innerWidth / 2;
+    scene.input.mouseY = -e.clientY + window.innerHeight / 2;
+    scene.input.latestEvent = e;
+    if(e.buttons & 1 == 1) updateRotation();
+}
+onkeyup = onkeydown = function (e) {
+    scene.input.latestEvent = e;
+}
 function rayIntersect(start, vel) {
     function modOne(x) {return (x % 1 + 1) % 1;}
-    let dir = createVector(Math.sign(vel.x), Math.sign(vel.y), Math.sign(vel.z));
-    let normVel = p5.Vector.normalize(vel);
-    let closestCellDist = createVector(0, 0, 0);
+    let dir = new THREE.Vector3(Math.sign(vel.x), Math.sign(vel.y), Math.sign(vel.z));
+    let normVel = new THREE.Vector3(0, 0, 0).copy(vel).normalize();
+    let closestCellDist = new THREE.Vector3(0, 0, 0);
     if(dir.x > 0) closestCellDist.x = 1 - modOne(start.x);
     else closestCellDist.x = modOne(start.x);
     if(dir.y > 0) closestCellDist.y = 1 - modOne(start.y);
     else closestCellDist.y = modOne(start.y);
     if(dir.z > 0) closestCellDist.z = 1 - modOne(start.z);
     else closestCellDist.z = modOne(start.z);
-    let tMax = createVector(Math.abs(closestCellDist.x / normVel.x), Math.abs(closestCellDist.y / normVel.y), Math.abs(closestCellDist.z / normVel.z));
-    let tDelta = createVector(Math.abs(1 / normVel.x), Math.abs(1 / normVel.y), Math.abs(1 / normVel.z));
-    let curCell = createVector(Math.floor(start.x), Math.floor(start.y), Math.floor(start.z));
-    for(let count = 0; count < 70; count++) {
+    let tMax = new THREE.Vector3(Math.abs(closestCellDist.x / normVel.x), Math.abs(closestCellDist.y / normVel.y), Math.abs(closestCellDist.z / normVel.z));
+    let tDelta = new THREE.Vector3(Math.abs(1 / normVel.x), Math.abs(1 / normVel.y), Math.abs(1 / normVel.z));
+    let curCell = new THREE.Vector3(Math.floor(start.x), Math.floor(start.y), Math.floor(start.z));
+    for(let count = 0; count < 100; count++) {
         if(curCell.x >= 0 && curCell.y >= 0 && curCell.z >= 0 && curCell.x < curPuzzle.size[0] && curCell.y < curPuzzle.size[1] && curCell.z < curPuzzle.size[2]) {
             let pos = curCell.x + (curCell.y + (curCell.z * curPuzzle.size[1])) * curPuzzle.size[0];
             if(curPuzzle.shape[pos] != cell_broken) return pos;
@@ -75,152 +115,168 @@ function rayIntersect(start, vel) {
     }
     return -1;
 }
-function draw() {
-    //Change rotation value if mouse is pressed
-    let doRender = false;
-    if(mouseIsPressed && !keyIsDown(SHIFT) && !keyIsDown(CONTROL) && (mouseX != pmouseX || mouseY != pmouseY)) {
-        updateRotation();
-        doRender = true;
-    }
-    if(keyIsDown(SHIFT) || keyIsDown(CONTROL)) {
-        let cursorPos = getCursorPosition();
-        let direction = p5.Vector.mult(cameraPos, -1).normalize();
-        selectedBlock = rayIntersect(cursorPos, direction);
-        doRender = true;
-    }
-    else selectedBlock = -1;
-    pmouseX = mouseX;
-    pmouseY = mouseY;
-    if(doRender) render();
-}
-let lastPress = 0;
-var lastColoredBlock = -1;
 function render() {
-    background(255, 255, 255)
-    drawCardinalDirections();
-    renderVoxels();
-    renderHints();
+    if(scene.input.selectedBlock != -1) scene.voxels[scene.input.selectedBlock].material = scene.materials.unsure;
+    if(scene.input.latestEvent.shiftKey || scene.input.latestEvent.ctrlKey) {
+        let cursorPos = getCursorPosition();
+        let direction = new THREE.Vector3(0, 0, 0).copy(scene.camera.position).multiplyScalar(-1).normalize();
+        scene.input.selectedBlock = rayIntersect(cursorPos, direction);
+        if(scene.input.selectedBlock != -1) scene.voxels[scene.input.selectedBlock].material = scene.materials.selected;
+    }
+    else scene.input.selectedBlock = -1;
+    requestAnimationFrame(render);
+    scene.renderer.clear();
+    scene.renderer.render(scene.obj, scene.camera);
 }
-function renderVoxels() {
-    push();
-    rotateX(xRot);
-    rotateY(yRot);
-    scale(boxScale);
-    translate(-curPuzzle.size[0] / 2, -curPuzzle.size[1] / 2, -curPuzzle.size[2] / 2);
-    stroke("#555555");
-    strokeWeight(2);
+window.destroyObjects = function (object, scene) {
+    if(typeof object != "object") return;
+    else if(object instanceof THREE.Mesh || object instanceof THREE.Line) scene.remove(object);
+    else if(object instanceof THREE.Object3D) return;
+    else if(object instanceof THREE.Material) return;
+    else for(let i in object) destroyObjects(object[i], scene);
+}
+function createSceneBasics() {
+    //Camera, scene, and renderer
+    scene.renderer = new THREE.WebGLRenderer({antialias: true});
+    scene.renderer.setClearColor(0xffffff);
+    scene.camera = new THREE.OrthographicCamera(0, 0, 0, 0, -1000, 1000);
+    scene.obj = new THREE.Scene();
+    scene.obj.add(scene.camera);
+    scene.camera.position.set(50, 0, 0);
+    document.body.appendChild(scene.renderer.domElement);
+    //Lighting
+    scene.ambientLight = new THREE.AmbientLight(0x999999, 1);
+    scene.obj.add(scene.ambientLight);
+    scene.light = new THREE.PointLight(0xfff8ee, 1, 0, 1);
+    scene.camera.add(scene.light);
+    scene.light.position.set(0, 10, -30);
+    //Cardinal indicator
+    const cardinalColors = [0xFF0000, 0x00FF00, 0x0000FF];
+    const directions = ['x', 'y', 'z'];
+    for(let i = 0; i < 3; i++) {
+        let endPosition = new THREE.Vector3();
+        endPosition[directions[i]] = 1;
+        scene.cardinal[i] = new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), endPosition]),
+            new THREE.LineBasicMaterial({color: cardinalColors[i]})
+        );
+        scene.camera.add(scene.cardinal[i]);
+    }
+    //Debug objects
+    //scene.debug.cursorIndicator=new THREE.Mesh(geometry,scene.materials.painted);
+    //scene.obj.add(scene.debug.cursorIndicator);
+}
+function createVoxelScene() {
+    scene.geometry.box = new THREE.BoxGeometry(1, 1, 1);
+    scene.geometry.wire = new THREE.EdgesGeometry(scene.geometry.box);
+    scene.geometry.wire.scale(1.001, 1.001, 1.001);
     //Loop through voxels
     const size = curPuzzle.size;
     for(let x = 0; x < size[0]; x++) for(let y = 0; y < size[1]; y++) for(let z = 0; z < size[2]; z++) {
         //Find array index of voxels
         let position = x + (y + z * size[1]) * size[0];
-        if(curPuzzle.visibleSides[position] == 0) continue;
-        if(curPuzzle.shape[position] != cell_broken) {
-            //Find appropriate fill color
-            if(curPuzzle.shape[position] == cell_colored) fill("pink");
-            else if(curPuzzle.shape[position] == cell_unsure) fill("white");
-            if(position == selectedBlock) fill("yellow");
-            //Draw voxel
-            push();
-            translate(x + 0.5, y + 0.5, z + 0.5);
-            box(1, 1, 1);
-            pop();
-        }
+        scene.voxels[position] = voxelMesh(x, y, z, position);
+        scene.obj.add(scene.voxels[position]);
     }
-    pop();
 }
-function renderHints() {
-    push();
-    rotateX(xRot);
-    rotateY(yRot);
-    scale(boxScale);
-    translate(-curPuzzle.size[0] / 2, -curPuzzle.size[1] / 2, -curPuzzle.size[2] / 2);
-    textAlign(CENTER, CENTER);
-    textFont(font);
-    textSize(0.6);
-    fill("#000000");
-    stroke("#000000");
-    strokeWeight(2);
-    let faceSize = curPuzzle.maxFaceSize;
-    for(let dim = 0; dim < 3; dim++) {
-        //Get subsection of hints
-        const faceHints = curPuzzle.hintsTotal.slice(faceSize * dim, faceSize * (dim + 1));
-        const faceHintPieces = curPuzzle.hintsPieces.slice(faceSize * dim, faceSize * (dim + 1));
-        //Get other dimensions
-        const xDim = dim == 0 ? 2 : 0;
-        const yDim = dim == 1 ? 2 : 1;
-        let faceWidth = curPuzzle.size[xDim], faceHeight = curPuzzle.size[yDim];
-        let facing = Math.sign(cameraPos[['x', 'y', 'z'][dim]]);
-        let facingMask = (4 ** dim) * (facing == -1 ? 1 : 2);
-        for(let x = 0; x < faceWidth; x++) for(let y = 0; y < faceHeight; y++) {
-            //Get hints
-            let Coords2D = x + faceWidth * y;
-            const pieces = faceHintPieces[Coords2D];
-            if(pieces == 0) continue;
-            const total = faceHints[Coords2D];
-            //Get row of cells
-            let cell = [0, 0, 0];
-            cell[xDim] = x;
-            cell[yDim] = y;
-            let start = curPuzzle.collapsePos(cell);
-            let spacing = dim == 0 ? 1 : (dim == 1 ? faceHeight : faceWidth * faceHeight);
-            //Render text for each uncovered block
-            let textPosition = [0, 0, 0];
-            textPosition[xDim] = x + 0.5;
-            textPosition[yDim] = y + 0.4;
-            for(let i = 0; i < curPuzzle.size[dim]; i++) {
-                if((curPuzzle.visibleSides[start + spacing * i] & facingMask) == 0) continue;
-                push();
-                textPosition[dim] = i + 0.501 * facing + 0.5;
-                translate(textPosition[0], textPosition[1], textPosition[2]);
-                //Rotate onto face
-                if(dim == 0) rotateY(Math.PI / 2);
-                if(dim == 1) rotateX(Math.PI / 2);
-                //Flip text if viewing from negative side
-                if(facing == -1 ^ dim == 1) scale(-1, 1);
-                //Draw shape around text if applicable
-                if(pieces != 1) {
-                    noFill();
-                    if(pieces == 2) ellipse(0, 0.1, 0.8);
-                    if(pieces == 3) rect(-0.4, -0.3, 0.8, 0.8);
-                    if(pieces == 4) triangle(-0.4, -0.3, 0.4, -0.3, 0, 0.5);
-                    fill("#000000");
-                }
-                //Draw text
-                text(total, 0, 0);
-                pop();
-            }
-        }
+function voxelMesh(x, y, z, position) {
+    let cell = curPuzzle.shape[position];
+    let materials = [];
+    for(let i = 0; i < 3; i++) {
+        let hint = curPuzzle.getHintPosition(position, i);
+        let material = getVoxelTexture(curPuzzle.hintsTotal[hint], curPuzzle.hintsPieces[hint], cell);
+        materials[i * 2] = material;
+        materials[i * 2 + 1] = material;
     }
+    let mesh = new THREE.Mesh(scene.geometry.box, materials);
+    let pos = new THREE.Vector3(x - curPuzzle.size[0] / 2 + 0.5, y - curPuzzle.size[1] / 2 + 0.5, z - curPuzzle.size[2] / 2 + 0.5);
+    mesh.position.copy(pos);
+
+    mesh.add(new THREE.LineSegments(scene.geometry.wire, scene.materials.wire));
+    return mesh;
+}
+function getVoxelTexture(hint, hintPieces, cellType) {
+    if(cellType == cell_unsure) {
+        if(hintPieces == 0) return scene.materials.unsure;
+        else if(scene.materials.textUnsure[hint] == null) {
+            scene.materials.textUnsure[hint] = new THREE.MeshStandardMaterial().copy(scene.materials.unsure);
+            let texture = getTextTexture(hint);
+            scene.materials.textUnsure[hint].map = texture;
+        }
+        return scene.materials.textUnsure[hint];
+
+    }
+    if(cellType == cell_colored) {
+        if(hintPieces == 0) return scene.materials.painted;
+        else if(scene.materials.textPainted[hint] == null) {
+            scene.materials.textPainted[hint] = new THREE.MeshStandardMaterial().copy(scene.materials.painted);
+            let texture = getTextTexture(hint);
+            scene.materials.textPainted[hint].map = texture;
+        }
+        return scene.materials.textPainted[hint];
+
+    }
+
+}
+window.getTextTexture = function (num) {
+    let context = document.getElementById("textRender").getContext("2d");
+    context.clearRect(0, 0, 50, 50);
+    context.font = "40px Consolas";
+    context.fillStyle = "black";
+    context.textAlign = "center";
+    context.fillText(num, 25, 40);
+    let imageData = context.getImageData(0, 0, 50, 50).data;
+    let grayscale = new Uint8Array(50 * 50);
+    for(let x = 0; x < 50; x++) for(let y=0;y<50;y++) grayscale[x+y*50] = 255 - imageData[(x+(49-y)*50) * 4 + 3];
+    let texture = new THREE.DataTexture(grayscale, 50, 50, THREE.LuminanceFormat, THREE.UnsignedByteType);
+    texture.magFilter=THREE.LinearFilter;
+    texture.minFilter=THREE.LinearFilter;
+    texture.anisotropy = 16;
+    return texture;
 }
 function updateRotation() {
-    yRot -= (pmouseX - mouseX) * mouseSpeed;
-    xRot += (pmouseY - mouseY) * mouseSpeed;
-    if(xRot > Math.PI / 2) xRot = Math.PI / 2;
-    if(xRot < -Math.PI / 2) xRot = -Math.PI / 2;
-    if(yRot > Math.PI * 2) yRot -= Math.PI * 2;
-    if(yRot < 0) yRot += Math.PI * 2;
-    cameraPos = createVector(Math.sin(yRot) * -Math.cos(xRot), Math.sin(xRot), Math.cos(xRot) * Math.cos(yRot));
-    cameraPos.mult(10);
+    let oldVisibleSideMap = (scene.camera.position.x > 0 ? 2 : 1) + (scene.camera.position.y > 0 ? 2 : 1) * 4 + (scene.camera.position.z > 0 ? 2 : 1) * 16;
+    const mouseSpeed = 0.006;
+    let inp = scene.input;
+    inp.yRot -= (inp.pmouseX - inp.mouseX) * mouseSpeed;
+    inp.xRot += (inp.pmouseY - inp.mouseY) * mouseSpeed;
+    if(inp.xRot > Math.PI / 2) inp.xRot = Math.PI / 2;
+    if(inp.xRot < -Math.PI / 2) inp.xRot = -Math.PI / 2;
+    if(inp.yRot > Math.PI * 2) inp.yRot -= Math.PI * 2;
+    if(inp.yRot < 0) inp.yRot += Math.PI * 2;
+    scene.camera.position.set(Math.sin(inp.yRot) * - Math.cos(inp.xRot), Math.sin(inp.xRot), Math.cos(inp.xRot) * Math.cos(inp.yRot));
+    scene.camera.position.multiplyScalar(50);
+    scene.camera.lookAt(0, 0, 0);
+    scene.camera.updateProjectionMatrix();
+    for(let i = 0; i < 3; i++) {
+        scene.cardinal[i].setRotationFromEuler(new THREE.Euler(inp.xRot, inp.yRot, 0));
+    }
+    let visibleSideMap = (scene.camera.position.x > 0 ? 2 : 1) + (scene.camera.position.y > 0 ? 2 : 1) * 4 + (scene.camera.position.z > 0 ? 2 : 1) * 16;
+    if(oldVisibleSideMap!=visibleSideMap) for(let i = 0; i < curPuzzle.shapeSize; i++) {
+        let isVisible = (curPuzzle.visibleSides[i] & visibleSideMap) == 0 ? false : true;
+        scene.voxels[i].visible=isVisible;
+    }
 }
 //Returns the position of the cursor in 3d space
-function getCursorPosition() {
-    let mouse = createVector(mouseX - windowWidth / 2, mouseY - windowHeight / 2);
-    let xPixelStep = createVector(1, 0, Math.tan(yRot)).normalize();
+window.getCursorPosition = function () {
+    let xRot = scene.input.xRot;
+    let yRot = scene.input.yRot;
+    let xPixelStep = new THREE.Vector3(1, 0, Math.tan(yRot)).normalize();
     if(yRot > Math.PI / 2 && yRot < 3 * Math.PI / 2) {
         xPixelStep.x = -xPixelStep.x;
         xPixelStep.z = -xPixelStep.z;
     }
-    let yPixelStep = createVector(-Math.sin(yRot), -1 / Math.tan(xRot), Math.cos(yRot)).normalize();
-    xPixelStep.mult(mouse.x / boxScale);
-    yPixelStep.mult((xRot > 0 ? -1 : 1) * mouse.y / boxScale);
-    let cursorPos = p5.Vector.add(p5.Vector.add(xPixelStep, yPixelStep), cameraPos);
+    let yPixelStep = new THREE.Vector3(Math.sin(yRot), 1 / Math.tan(xRot), -Math.cos(yRot)).normalize();
+    xPixelStep.multiplyScalar(scene.input.mouseX / scene.input.boxSize);
+    yPixelStep.multiplyScalar((xRot < 0 ? -1 : 1) * scene.input.mouseY / scene.input.boxSize);
+    let cursorPos = new THREE.Vector3(0, 0, 0).add(xPixelStep).add(yPixelStep).add(scene.camera.position);
+    //scene.debug.cursorIndicator.position.set(cursorPos.x,cursorPos.y,cursorPos.z);
     cursorPos.x += curPuzzle.size[0] / 2;
     cursorPos.y += curPuzzle.size[1] / 2;
     cursorPos.z += curPuzzle.size[2] / 2;
     return cursorPos;
 }
-function generateSidesVisible() {
+window.generateSidesVisible = function () {
     curPuzzle.visibleSides = [];
     let spacing = [1, curPuzzle.size[0], curPuzzle.size[0] * curPuzzle.size[1]];
     for(let x = 0; x < curPuzzle.size[0]; x++) for(let y = 0; y < curPuzzle.size[1]; y++) for(let z = 0; z < curPuzzle.size[2]; z++) {
@@ -240,43 +296,4 @@ function generateSidesVisible() {
         }
         curPuzzle.visibleSides[position] = visible;
     }
-}
-function mouseDragged() {
-    if(selectedBlock != -1) {
-        if(keyIsDown(SHIFT)) {
-            curPuzzle.shape[selectedBlock] = 1;
-            generateSidesVisible();
-        }
-        if(keyIsDown(CONTROL) && lastColoredBlock != selectedBlock) {
-            curPuzzle.shape[selectedBlock] = curPuzzle.shape[selectedBlock] == 0 ? 2 : 0;
-        }
-        lastColoredBlock = selectedBlock;
-    }
-}
-var mousePressed = mouseDragged;
-function mouseReleased() {
-    lastColoredBlock = -1;
-}
-function drawCardinalDirections() {
-    strokeWeight(7);
-    //Transformations
-    push();
-    translate(-windowWidth / 2 + 50, windowHeight / 2 - 50);
-    push();
-    rotateX(xRot);
-    rotateY(yRot);
-    scale(30);
-    //Draw xyz lines
-    stroke("red");
-    line(0, 0, 0, 1, 0, 0);
-    stroke("green");
-    line(0, 0, 0, 0, 1, 0);
-    stroke("blue");
-    line(0, 0, 0, 0, 0, 1);
-    pop();
-    //Draw small grey sphere at intersection point
-    noStroke();
-    fill("#666666");
-    sphere(3);
-    pop();
 }
