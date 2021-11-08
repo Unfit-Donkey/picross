@@ -17,7 +17,7 @@ window.scene = {
         unsure: new THREE.MeshStandardMaterial({color: 0xffffff}),
         painted: new THREE.MeshStandardMaterial({color: 0xbbff99, metalness: 0.5, roughness: 0}),
         selected: new THREE.MeshStandardMaterial({color: 0xff0000}),
-        wire: new THREE.LineBasicMaterial({color: 0x444444,linewidth:2}),
+        wire: new THREE.LineBasicMaterial({color: 0x444444, linewidth: 2}),
         text: [],
         textUnsure: [],
         textPainted: [],
@@ -44,7 +44,7 @@ document.body.onload = function () {
     createSceneBasics();
     createVoxelScene();
     resize();
-    window.addEventListener("resize",resize);
+    window.addEventListener("resize", resize);
     generateSidesVisible();
     updateRotation();
 
@@ -69,14 +69,26 @@ function resize() {
     }
     scene.renderer.setSize(window.innerWidth, window.innerHeight, true);
 }
+ontouchstart = function(e) {
+    console.log(e.touches[0]);
+    scene.input.mouseX=e.touches[0].clientX-window.innerWidth/2;
+    scene.input.mouseY=-e.touches[0].clientY+window.innerHeight/2;
+}
 onmousemove = function (e) {
     scene.input.pmouseX = scene.input.mouseX;
     scene.input.pmouseY = scene.input.mouseY;
-    scene.input.mouseX = e.clientX - window.innerWidth / 2;
-    scene.input.mouseY = -e.clientY + window.innerHeight / 2;
+    if(e.type == "touchmove") {
+        scene.input.mouseX = e.touches[0].clientX - window.innerWidth / 2;
+        scene.input.mouseY = -e.touches[0].clientY + window.innerHeight / 2;
+    }
+    else {
+        scene.input.mouseX = e.clientX - window.innerWidth / 2;
+        scene.input.mouseY = -e.clientY + window.innerHeight / 2;
+    }
     scene.input.latestEvent = e;
-    if(e.buttons & 1 == 1) updateRotation();
+    if(e.buttons & 1 == 1||e.type=="touchmove") updateRotation();
 }
+ontouchmove = onmousemove;
 onkeyup = onkeydown = function (e) {
     scene.input.latestEvent = e;
 }
@@ -227,10 +239,10 @@ window.getTextTexture = function (num) {
     context.fillText(num, 25, 40);
     let imageData = context.getImageData(0, 0, 50, 50).data;
     let grayscale = new Uint8Array(50 * 50);
-    for(let x = 0; x < 50; x++) for(let y=0;y<50;y++) grayscale[x+y*50] = 255 - imageData[(x+(49-y)*50) * 4 + 3];
+    for(let x = 0; x < 50; x++) for(let y = 0; y < 50; y++) grayscale[x + y * 50] = 255 - imageData[(x + (49 - y) * 50) * 4 + 3];
     let texture = new THREE.DataTexture(grayscale, 50, 50, THREE.LuminanceFormat, THREE.UnsignedByteType);
-    texture.magFilter=THREE.LinearFilter;
-    texture.minFilter=THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.minFilter = THREE.LinearFilter;
     texture.anisotropy = 16;
     return texture;
 }
@@ -252,9 +264,9 @@ function updateRotation() {
         scene.cardinal[i].setRotationFromEuler(new THREE.Euler(inp.xRot, inp.yRot, 0));
     }
     let visibleSideMap = (scene.camera.position.x > 0 ? 2 : 1) + (scene.camera.position.y > 0 ? 2 : 1) * 4 + (scene.camera.position.z > 0 ? 2 : 1) * 16;
-    if(oldVisibleSideMap!=visibleSideMap) for(let i = 0; i < curPuzzle.shapeSize; i++) {
+    if(oldVisibleSideMap != visibleSideMap) for(let i = 0; i < curPuzzle.shapeSize; i++) {
         let isVisible = (curPuzzle.visibleSides[i] & visibleSideMap) == 0 ? false : true;
-        scene.voxels[i].visible=isVisible;
+        scene.voxels[i].visible = isVisible;
     }
 }
 //Returns the position of the cursor in 3d space
