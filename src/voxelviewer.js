@@ -40,58 +40,7 @@ window.scene = {
         latestEvent: {},
     }
 };
-document.body.onload = function () {
-    createSceneBasics();
-    createVoxelScene();
-    resize();
-    window.addEventListener("resize", resize);
-    generateSidesVisible();
-    updateRotation();
 
-    render();
-}
-function resize() {
-    //Compute camera variables
-    let frustumSize = 10;
-    let aspectRatio = window.innerWidth / window.innerHeight;
-    let aspect = Math.sqrt(aspectRatio);
-    scene.input.boxSize = window.innerWidth / 2 / frustumSize / aspect;
-    //Change camera viewport
-    scene.camera.left = -frustumSize * aspect;
-    scene.camera.right = frustumSize * aspect;
-    scene.camera.top = frustumSize / aspect;
-    scene.camera.bottom = -frustumSize / aspect;
-    scene.camera.updateMatrixWorld();
-    scene.camera.updateProjectionMatrix();
-    //Update cardinal directions
-    for(let i = 0; i < 3; i++) {
-        scene.cardinal[i].position.set(scene.camera.left + 1, scene.camera.bottom + 1, 0);
-    }
-    scene.renderer.setSize(window.innerWidth, window.innerHeight, true);
-}
-window.addEventListener("touchstart",e=> {
-    console.log(e.touches[0]);
-    scene.input.mouseX=e.touches[0].clientX-window.innerWidth/2;
-    scene.input.mouseY=-e.touches[0].clientY+window.innerHeight/2;
-});
-window.onmousemove = function (e) {
-    scene.input.pmouseX = scene.input.mouseX;
-    scene.input.pmouseY = scene.input.mouseY;
-    if(e.type == "touchmove") {
-        scene.input.mouseX = e.touches[0].clientX - window.innerWidth / 2;
-        scene.input.mouseY = -e.touches[0].clientY + window.innerHeight / 2;
-    }
-    else {
-        scene.input.mouseX = e.clientX - window.innerWidth / 2;
-        scene.input.mouseY = -e.clientY + window.innerHeight / 2;
-    }
-    scene.input.latestEvent = e;
-    if(e.buttons & 1 == 1||e.type=="touchmove") updateRotation();
-}
-window.addEventListener("touchmove",window.onmousemove);
-onkeyup = onkeydown = function (e) {
-    scene.input.latestEvent = e;
-}
 function rayIntersect(start, vel) {
     function modOne(x) {return (x % 1 + 1) % 1;}
     let dir = new THREE.Vector3(Math.sign(vel.x), Math.sign(vel.y), Math.sign(vel.z));
@@ -127,7 +76,7 @@ function rayIntersect(start, vel) {
     }
     return -1;
 }
-function render() {
+window.render = function() {
     if(scene.input.selectedBlock != -1) scene.voxels[scene.input.selectedBlock].material = scene.materials.unsure;
     if(scene.input.latestEvent.shiftKey || scene.input.latestEvent.ctrlKey) {
         let cursorPos = getCursorPosition();
@@ -147,7 +96,7 @@ window.destroyObjects = function (object, scene) {
     else if(object instanceof THREE.Material) return;
     else for(let i in object) destroyObjects(object[i], scene);
 }
-function createSceneBasics() {
+window.createSceneBasics = function(){
     //Camera, scene, and renderer
     scene.renderer = new THREE.WebGLRenderer({antialias: true});
     scene.renderer.setClearColor(0xffffff);
@@ -178,7 +127,7 @@ function createSceneBasics() {
     //scene.debug.cursorIndicator=new THREE.Mesh(geometry,scene.materials.painted);
     //scene.obj.add(scene.debug.cursorIndicator);
 }
-function createVoxelScene() {
+window.createVoxelScene = function(){
     scene.geometry.box = new THREE.BoxGeometry(1, 1, 1);
     scene.geometry.wire = new THREE.EdgesGeometry(scene.geometry.box);
     scene.geometry.wire.scale(1.001, 1.001, 1.001);
@@ -246,7 +195,7 @@ window.getTextTexture = function (num) {
     texture.anisotropy = 16;
     return texture;
 }
-function updateRotation(forceSceneRegeneration) {
+window.updateRotation = function(forceSceneRegeneration) {
     let oldVisibleSideMap = (scene.camera.position.x > 0 ? 2 : 1) + (scene.camera.position.y > 0 ? 2 : 1) * 4 + (scene.camera.position.z > 0 ? 2 : 1) * 16;
     const mouseSpeed = 0.006;
     let inp = scene.input;
@@ -308,12 +257,4 @@ window.generateSidesVisible = function () {
         }
         curPuzzle.visibleSides[position] = visible;
     }
-}
-window.updateSlicer = function(slices){
-    window.destroyObjects(scene.voxels,scene.obj);
-    curPuzzle=window.fullPuzzle.sliceUp(slices);
-    console.log(curPuzzle);
-    createVoxelScene();
-    generateSidesVisible();
-    updateRotation(true);
 }
