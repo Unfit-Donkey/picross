@@ -23,6 +23,7 @@ window.addEventListener("touchstart", e => {
     scene.input.mouseY = -e.touches[0].clientY + window.innerHeight / 2;
 });
 window.onmousemove = function (e) {
+    e.preventDefault();
     scene.input.pmouseX = scene.input.mouseX;
     scene.input.pmouseY = scene.input.mouseY;
     if(e.type == "touchmove") {
