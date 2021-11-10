@@ -69,12 +69,12 @@ function resize() {
     }
     scene.renderer.setSize(window.innerWidth, window.innerHeight, true);
 }
-ontouchstart = function(e) {
+window.addEventListener("touchstart",e=> {
     console.log(e.touches[0]);
     scene.input.mouseX=e.touches[0].clientX-window.innerWidth/2;
     scene.input.mouseY=-e.touches[0].clientY+window.innerHeight/2;
-}
-onmousemove = function (e) {
+});
+window.onmousemove = function (e) {
     scene.input.pmouseX = scene.input.mouseX;
     scene.input.pmouseY = scene.input.mouseY;
     if(e.type == "touchmove") {
@@ -88,7 +88,7 @@ onmousemove = function (e) {
     scene.input.latestEvent = e;
     if(e.buttons & 1 == 1||e.type=="touchmove") updateRotation();
 }
-ontouchmove = onmousemove;
+window.addEventListener("touchmove",window.onmousemove);
 onkeyup = onkeydown = function (e) {
     scene.input.latestEvent = e;
 }
