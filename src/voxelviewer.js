@@ -5,7 +5,8 @@ const cell_colored = 2;
 const cell_unsure = 3;
 window.THREE = THREE;
 window.curPuzzle = Puzzle.fromString('Basic puzzle~3~MHF~+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------~BBBBAAAAAAAAAABBCBCBGBGBCCCCBBFCFCJBGBAAAABBCBCBGBGBCCCCBBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAACBHBCBCBCBCBEBAAAAAAAABBCBEBCBCBCBCBCBBBCCEBCBAACBHBCBCBCBCBEBAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAECAAAAAAAAAAAAAABBAAAADBFBAAAAAAAAAAAABBBBBBBBDBDBAAAAAAAAAAAAAABBBBAAAADBDBDBDBDBDBBBBBBBAAAAAADBDBDBDBDBDBAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAACCAAAAAAAACCAAAAAAAA');
-window.fullPuzzle = Puzzle.fromString('Basic puzzle~3~MHF~------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------~BBBBAAAAAAAAAABBCBCBGBGBCCCCBBFCFCJBGBAAAABBCBCBGBGBCCCCBBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAACBHBCBCBCBCBEBAAAAAAAABBCBEBCBCBCBCBCBBBCCEBCBAACBHBCBCBCBCBEBAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAECAAAAAAAAAAAAAABBAAAADBFBAAAAAAAAAAAABBBBBBBBDBDBAAAAAAAAAAAAAABBBBAAAADBDBDBDBDBDBBBBBBBAAAAAADBDBDBDBDBDBAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAACCAAAAAAAACCAAAAAAAA');
+window.fullPuzzle = Puzzle.fromString('Basic puzzle~3~MHF~                                                              +           +           +    +      +    +      ++++++      ++++++     ++          ++           +                                   ++++++      +++++++++ +++       ++ ++      +++          +   +    +      +    +      ++++++      ++++++     ++          ++           +                                                                       +           +         ~AAAAAAAAAABBBBCCCCGBGBCBCBBBAAAAGBJBFCFCBBCCCCGBGBCBCBBBAAAAAAAAAABBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAACBHBCBCBCBCBEBAAAAAAAABBCBEBCBCBCBCBCBBBCCEBCBAACBHBCBCBCBCBEBAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAADBDBDBDBDBDBAAAAAAAAAAAADBDBDBDBDBDBBBBBBBAABBDBDBAAAAAAAAAAAAAABBBBAADBFBAAAAAAAAAAAABBBBBBAAAAECAAAAAAAAAAAAAABBAA');
+//window.fullPuzzle = Puzzle.fromString('Basic puzzle~3~MHF~------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------~BBBBAAAAAAAAAABBCBCBGBGBCCCCBBFCFCJBGBAAAABBCBCBGBGBCCCCBBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAACBHBCBCBCBCBEBAAAAAAAABBCBEBCBCBCBCBCBBBCCEBCBAACBHBCBCBCBCBEBAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAECAAAAAAAAAAAAAABBAAAADBFBAAAAAAAAAAAABBBBBBBBDBDBAAAAAAAAAAAAAABBBBAAAADBDBDBDBDBDBBBBBBBAAAAAADBDBDBDBDBDBAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAACCAAAAAAAACCAAAAAAAA');
 curPuzzle = Puzzle.fromString('Basic puzzle~3~MHF~                                                              +           +           +    +      +    +      ++++++      ++++++     ++          ++           +                                   ++++++      +++++++++ +++       ++ ++      +++          +   +    +      +    +      ++++++      ++++++     ++          ++           +                                                                       +           +         ~AAAAAAAAAABBBBCCCCGBGBCBCBBBAAAAGBJBFCFCBBCCCCGBGBCBCBBBAAAAAAAAAABBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAACBHBCBCBCBCBEBAAAAAAAABBCBEBCBCBCBCBCBBBCCEBCBAACBHBCBCBCBCBEBAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAADBDBDBDBDBDBAAAAAAAAAAAADBDBDBDBDBDBBBBBBBAABBDBDBAAAAAAAAAAAAAABBBBAADBFBAAAAAAAAAAAABBBBBBAAAAECAAAAAAAAAAAAAABBAA');
 
 window.scene = {
@@ -39,7 +40,6 @@ window.scene = {
         latestEvent: {},
     }
 };
-window.cameraPos;
 document.body.onload = function () {
     createSceneBasics();
     createVoxelScene();
@@ -246,7 +246,7 @@ window.getTextTexture = function (num) {
     texture.anisotropy = 16;
     return texture;
 }
-function updateRotation() {
+function updateRotation(forceSceneRegeneration) {
     let oldVisibleSideMap = (scene.camera.position.x > 0 ? 2 : 1) + (scene.camera.position.y > 0 ? 2 : 1) * 4 + (scene.camera.position.z > 0 ? 2 : 1) * 16;
     const mouseSpeed = 0.006;
     let inp = scene.input;
@@ -264,7 +264,7 @@ function updateRotation() {
         scene.cardinal[i].setRotationFromEuler(new THREE.Euler(inp.xRot, inp.yRot, 0));
     }
     let visibleSideMap = (scene.camera.position.x > 0 ? 2 : 1) + (scene.camera.position.y > 0 ? 2 : 1) * 4 + (scene.camera.position.z > 0 ? 2 : 1) * 16;
-    if(oldVisibleSideMap != visibleSideMap) for(let i = 0; i < curPuzzle.shapeSize; i++) {
+    if(oldVisibleSideMap != visibleSideMap||forceSceneRegeneration) for(let i = 0; i < curPuzzle.shapeSize; i++) {
         let isVisible = (curPuzzle.visibleSides[i] & visibleSideMap) == 0 ? false : true;
         scene.voxels[i].visible = isVisible;
     }
@@ -308,4 +308,12 @@ window.generateSidesVisible = function () {
         }
         curPuzzle.visibleSides[position] = visible;
     }
+}
+window.updateSlicer = function(slices){
+    window.destroyObjects(scene.voxels,scene.obj);
+    curPuzzle=window.fullPuzzle.sliceUp(slices);
+    console.log(curPuzzle);
+    createVoxelScene();
+    generateSidesVisible();
+    updateRotation(true);
 }

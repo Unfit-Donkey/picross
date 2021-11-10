@@ -7,6 +7,12 @@ export class Puzzle {
         this.shape = new Array(this.shapeSize);
         this.hintsTotal = new Array(this.maxFaceSize * dimension);
         this.hintsPieces = new Array(this.maxFaceSize * dimension);
+        this.spacing = [];
+        let spacing = 1;
+        for(let i = 0; i < this.dimension; i++) {
+            this.spacing.push(spacing);
+            spacing *= this.size[i];
+        }
     }
     calculateSizes() {
         this.shapeSize = 1;
@@ -42,6 +48,12 @@ export class Puzzle {
         }
         for(let i = 1; i < strs[4].length; i += 2) {
             puz.hintsPieces[(i - 1) / 2] = strs[4].charCodeAt(i) - A;
+        }
+        puz.spacing = [];
+        let spacing = 1;
+        for(let i = 0; i < puz.dimension; i++) {
+            puz.spacing.push(spacing);
+            spacing *= puz.size[i];
         }
         return puz;
     }
@@ -84,7 +96,6 @@ export class Puzzle {
         return this.shape[flatPos];
     }
     sliceUp(dims) {
-
         //Find x, y, and z axis
         let size = [0, 0, 0];
         let xAxis = dims.indexOf(-1);
@@ -94,17 +105,18 @@ export class Puzzle {
         size[1] = this.size[yAxis] || 1;
         size[2] = this.size[zAxis] || 1;
         let out = new Puzzle(3, size, this.name + " Sliced");
+        let pos = dims.slice();
         //Loop through each cube in the destination map
         for(let x = 0; x < size[0]; x++) {
-            dims[xAxis] = x;
+            pos[xAxis] = x;
             for(let y = 0; y < size[1]; y++) {
-                dims[yAxis] = y;
+                pos[yAxis] = y;
                 for(let z = 0; z < size[2]; z++) {
-                    dims[zAxis] = z;
+                    pos[zAxis] = z;
                     //Find position in original map
                     let oldPos = 0;
-                    for(let i = dims.length - 1; i >= 1; i--) oldPos = (dims[i] + oldPos) * this.size[i - 1];
-                    oldPos += dims[0];
+                    for(let i = dims.length - 1; i >= 1; i--) oldPos = (pos[i] + oldPos) * this.size[i - 1];
+                    oldPos += pos[0];
                     //Find position in new map
                     let newPos = x + (y + (z * size[1])) * size[0];
                     //Copy voxel
@@ -112,6 +124,35 @@ export class Puzzle {
                 }
             }
         }
+        out.hintsPieces.fill(0);
+        out.hintsTotal.fill(0);
+        //Loop through each face
+        for(let dim = 0; dim < 3; dim++) if([xAxis, yAxis, zAxis][dim] != -1) {
+            let xDir = [1, 0, 0][dim];
+            let yDir = [2, 2, 1][dim];
+            let oldXDir = dims.indexOf(-1 - xDir);
+            let oldYDir = dims.indexOf(-1 - yDir);
+            let oldZDir = dims.indexOf(-1 - dim);
+            let width = out.size[xDir];
+            let height = out.size[yDir];
+            let basePosition = dims.slice();
+            basePosition[oldXDir] = 0;
+            basePosition[oldYDir] = 0;
+            basePosition[oldZDir] = 0;
+            let oldBase = this.collapsePos(basePosition);
+            for(let x = 0; x < width; x++) for(let y = 0; y < height; y++) {
+                let newPosition = x * out.spacing[xDir] + y * out.spacing[yDir];
+                let newHintPos = out.getHintPosition(newPosition, dim);
+                let oldPosition = oldBase + x * (this.spacing[oldXDir] || 0) + y * (this.spacing[oldYDir] || 0);
+                let oldHintPos = this.getHintPosition(oldPosition, oldZDir);
+                out.hintsPieces[newHintPos] = this.hintsPieces[oldHintPos];
+                out.hintsTotal[newHintPos] = this.hintsTotal[oldHintPos];
+            }
+
+        }
+
+
+
         return out;
     }
     toString() {
