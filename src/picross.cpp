@@ -3,9 +3,10 @@
 #include <string>
 #include <cstring>
 #include <vector>
+#ifdef __EMSCRIPTEN__
 #include <emscripten.h>
-#include <emscripten/emscripten.h>
 #include <emscripten/bind.h>
+#endif
 
 using namespace std;
 typedef enum Cell : char {
@@ -15,6 +16,11 @@ typedef struct Hint {
     unsigned char total;
     unsigned char pieceCount;
 } Hint;
+void solveRow(int total, int pieces, int rowLength, Cell* row, Cell* out);
+void printCells(Cell* cells, int count) {
+    const char* type = "0 +-EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE";
+    for(int i = 0;i < count;i++) cout << type[cells[i]];
+}
 class Puzzle {
 public:
     string name;
@@ -25,6 +31,23 @@ public:
 private:
     int maxFaceSize;
     int shapeSize;
+    int* spacing = NULL;
+    void computeShapeSize() {
+        int minimumRowLength = 10000;
+        shapeSize = 1;
+        for(int i = 0;i < dimension;i++) {
+            shapeSize *= size[i];
+            if(size[i] < minimumRowLength) minimumRowLength = size[i];
+        }
+        maxFaceSize = shapeSize / minimumRowLength;
+        free(spacing);
+        spacing = (int*)calloc(dimension, sizeof(int));
+        int space = 1;
+        for(int i = 0;i < dimension;i++) {
+            spacing[i] = space;
+            space *= size[i];
+        }
+    }
 public:
     Puzzle(string str) {
         string strs[10];
@@ -46,19 +69,12 @@ public:
         dimension = atoi(strs[1].c_str());
         free(size);
         size = (int*)calloc(dimension, sizeof(int));
-        for(int i = 0;i < strs[2].size();i++) size[i] = strs[2][i] - 'A';
-        cout << size[0] << endl;
-        //Reconstruct shape size
-        int minimumRowLength = 10000;
-        shapeSize = 1;
-        for(int i = 0;i < dimension;i++) {
-            shapeSize *= size[i];
-            if(size[i] < minimumRowLength) minimumRowLength = size[i];
-        }
-        maxFaceSize = shapeSize / minimumRowLength;
+        for(int i = 0;i < dimension;i++) size[i] = strs[2][i] - 'A';
+        computeShapeSize();
         //Copy shape
         free(shape);
         shape = (Cell*)calloc(strs[3].size(), sizeof(Cell));
+        memset(shape, 3, strs[3].size());
         for(int i = 0;i < strs[3].size();i++) {
             if(strs[3][i] == ' ') shape[i] = broken;
             else if(strs[3][i] == '-') shape[i] = unsure;
@@ -68,8 +84,8 @@ public:
         free(hints);
         hints = (Hint*)calloc(dimension * maxFaceSize, sizeof(Hint));
         for(int i = 0;i < strs[4].size();i += 2) {
-            hints[i].total = strs[4][i] - 'A';
-            hints[i].pieceCount = strs[4][i + 1] - 'A';
+            hints[i / 2].total = strs[4][i] - 'A';
+            hints[i / 2].pieceCount = strs[4][i + 1] - 'A';
         }
     }
     Puzzle(int dim, int* siz, string nam) {
@@ -78,18 +94,38 @@ public:
         size = (int*)calloc(dim, sizeof(int));
         memcpy(size, siz, dim * sizeof(int));
         name = nam;
-        int minimumRowLength = 10000;
-        shapeSize = 1;
-        for(int i = 0;i < dim;i++) {
-            shapeSize *= size[i];
-            if(size[i] < minimumRowLength) size[i] = minimumRowLength;
-        }
-        maxFaceSize = shapeSize / minimumRowLength;
+        computeShapeSize();
         free(shape);
         shape = (Cell*)calloc(shapeSize, sizeof(Cell));
     }
     void solve() {
-
+        bool isChange = true;
+        int changeCount = 0;
+        int loopCount = 0;
+        while(isChange) {
+            isChange = false;
+            for(int dim = 0;dim < dimension;dim++) {
+                Cell row[size[dim]];
+                Cell out[size[dim]];
+                for(int i = 0;i < shapeSize;i++) {
+                    memset(out, 0, size[dim]);
+                    //If not first cell in row
+                    if((i / spacing[dim]) % size[dim] != 0) continue;
+                    Hint hint = hints[getRowPosition(i, dim) + dim * maxFaceSize];
+                    getRow(i, dim, row);
+                    solveRow(hint.total, hint.pieceCount, size[dim], row, out);
+                    if(memcmp(row, out, size[dim] * sizeof(Cell)) != 0) {
+                        changeCount++;
+                        isChange = true;
+                        setRow(i, dim, out);
+                    }
+                }
+            }
+            loopCount++;
+            cout << "Change count " << loopCount << ": " << changeCount << endl;
+        }
+        cout << "Change count: " << changeCount << endl;
+        cout << "Loop count: " << loopCount << endl;
     }
     void generateHints() {
         free(hints);
@@ -120,14 +156,11 @@ public:
     int getRowPosition(int pos, int direction) {
         //Example:
         // size = {5,2,3,4}
-        // pos = 48, direction = 2
-        // belowSize = 10
+        // pos = 48, direction = 1
         // below = 8
         // above = 10
-        int belowSize = 1;
-        for(int i = 0;i < direction;i++) belowSize *= size[i];
-        int below = pos % belowSize;
-        int above = (pos / belowSize / size[direction]) * belowSize;
+        int below = pos % spacing[direction];
+        int above = (pos / spacing[direction] / size[direction]) * spacing[direction];
         return below + above;
     }
     void posToPositionArray(int pos, int* out) {
@@ -135,13 +168,11 @@ public:
             out[i] = pos % size[i];
             pos /= size[i];
         }
-
     }
     string toString() {
         // NAME~DIMENSION~SIZE~SHAPE~HINTS
         string out = name + "~" + std::to_string(dimension) + "~";
         for(int i = 0;i < dimension;i++) {
-            cout << size[i] << endl;
             out += string(1, 'A' + size[i]);
         }
         //Shape
@@ -159,11 +190,9 @@ public:
         return out;
     }
     int collapsePosition(int* position) {
-        int sliceSize = 1;
         int out = 0;
         for(int i = 0;i < dimension;i++) {
-            out += position[i] * sliceSize;
-            sliceSize *= size[i];
+            out += position[i] * spacing[i];
         }
         return out;
     }
@@ -171,41 +200,32 @@ public:
         return shape[collapsePosition(position)];
     }
     Hint getHint(int* position, int direction) {
-        int s = 1;
         int pos = 0;
         for(int i = 0;i < dimension;i++) {
             if(i == direction) continue;
-            pos += position[i] * s;
-            s *= size[i];
+            pos += position[i] * (spacing[i] / spacing[direction]);
         }
-        Hint out = hints[maxFaceSize * direction + pos];
-        return out;
+        return hints[maxFaceSize * direction + pos];
     }
     void setCell(int* position, Cell set) {
         shape[collapsePosition(position)] = set;
     }
-    void getRow(int* position, int dimension, Cell* out) {
-        int rowLength = size[dimension];
-        int spacing = 1;
-        for(int i = 0;i < dimension;i++) spacing *= size[i];
-        position[dimension] = 0;
-        int firstCell = collapsePosition(position);
+    void getRow(int position, int dim, Cell* out) {
+        int rowLength = size[dim];
+        position = position % spacing[dim] + ((position / spacing[dim] / size[dim])) * spacing[dim] * size[dim];
         for(int i = 0;i < rowLength;i++) {
-            out[i] = shape[firstCell + spacing * i];
+            out[i] = shape[position + spacing[dim] * i];
         }
     }
-    void setRow(int* position, int dimension, Cell* cells) {
-        int rowLength = size[dimension];
-        int spacing = 1;
-        for(int i = 0;i < dimension;i++) spacing *= size[i];
-        position[dimension] = 0;
-        int firstCell = collapsePosition(position);
+    void setRow(int position, int dim, Cell* cells) {
+        int rowLength = size[dim];
+        position = position % spacing[dim] + ((position / spacing[dim] / size[dim])) * spacing[dim] * size[dim];
         for(int i = 0;i < rowLength;i++) {
-            shape[firstCell + spacing * i] = cells[i];
+            shape[position + spacing[dim] * i] = cells[i];
         }
     }
 };
-Puzzle* puz = new Puzzle("A~1~B~ ~AB");
+Puzzle* puz;
 typedef struct SpacingPossiblity {
     unsigned char space[8];
     void print() {
@@ -216,7 +236,7 @@ typedef struct SpacingPossiblity {
 SpacingPossibility NULLPOSSIB = { {0,0,0,0,0,0,0,0} };
 
 vector<SpacingPossibility> spacePossibilities(int total, int pieces, bool zeroStart, bool zeroEnd) {
-    vector<SpacingPossibility> out(0);
+    vector<SpacingPossibility> out;
     if(pieces == 1) {
         out.push_back(NULLPOSSIB);
         out[0].space[0] = total;
@@ -225,9 +245,10 @@ vector<SpacingPossibility> spacePossibilities(int total, int pieces, bool zeroSt
     else if(pieces == 2) {
         int x = 0;
         for(int i = zeroStart ? 0 : 1;i <= total - (zeroEnd ? 0 : 1);i++) {
-            out.push_back(NULLPOSSIB);
-            out[x].space[0] = i;
-            out[x].space[1] = total - i;
+            SpacingPossibility possib;
+            possib.space[0] = i;
+            possib.space[1] = total - i;
+            out.push_back(possib);
             x++;
         }
         return out;
@@ -256,6 +277,14 @@ bool possibilityMatchesRow(Cell* row, Cell* possibility, int len) {
     return true;
 }
 void solveRow(int total, int pieces, int rowLength, Cell* row, Cell* out) {
+    if(pieces == 0) {
+        memcpy(out, row, rowLength);
+        return;
+    }
+    if(total == 0) {
+        memset(out, 0, rowLength);
+        return;
+    }
     //Generate possibilities for broken run
     vector<SpacingPossibility> bkn = spacePossibilities(rowLength - total, pieces + 1, true, true);
     //Generate possibilities for colored runs
@@ -278,7 +307,6 @@ void solveRow(int total, int pieces, int rowLength, Cell* row, Cell* out) {
                 memset(possib + countTotal, broken, gap);
                 countTotal += gap;
             }
-
             if(possibilityMatchesRow(row, possib, rowLength)) {
                 orCells(out, possib, rowLength);
             }
@@ -321,6 +349,7 @@ void doHints() {
 void solveCurrentPuzzle() {
     puz->solve();
 }
+#ifdef __EMSCRIPTEN__
 EMSCRIPTEN_BINDINGS(a) {
     emscripten::function("solveRow", &solveRowJS);
     emscripten::function("getPuzzle", &getPuzzle);
@@ -331,3 +360,10 @@ EMSCRIPTEN_BINDINGS(a) {
 int main() {
     return 0;
 }
+#else
+int main() {
+    puz = new Puzzle("Basic puzzle~3~MHF~------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------~AAAAAAAAAABBBBCCCCGBGBCBCBBBAAAAGBJBFCFCBBCCCCGBGBCBCBBBAAAAAAAAAABBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAACBHBCBCBCBCBEBAAAAAAAABBCBEBCBCBCBCBCBBBCCEBCBAACBHBCBCBCBCBEBAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAADBDBDBDBDBDBAAAAAAAAAAAADBDBDBDBDBDBBBBBBBAABBDBDBAAAAAAAAAAAAAABBBBAADBFBAAAAAAAAAAAABBBBBBAAAAECAAAAAAAAAAAAAABBAA");
+    puz->solve();
+    cout << puz->toString();
+}
+#endif
