@@ -4,7 +4,7 @@ const cell_broken = 1;
 const cell_colored = 2;
 const cell_unsure = 3;
 window.THREE = THREE;
-window.curPuzzle = Puzzle.fromString('Basic puzzle~3~MHF~+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------~AAAAAAAAAABBBBCCCCGBGBCBCBBBAAAAGBJBFCFCBBCCCCGBGBCBCBBBAAAAAAAAAABBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAACBHBCBCBCBCBEBAAAAAAAABBCBEBCBCBCBCBCBBBCCEBCBAACBHBCBCBCBCBEBAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAADBDBDBDBDBDBAAAAAAAAAAAADBDBDBDBDBDBBBBBBBAABBDBDBAAAAAAAAAAAAAABBBBAADBFBAAAAAAAAAAAABBBBBBAAAAECAAAAAAAAAAAAAABBAA');
+window.puzzle = Puzzle.fromString('Basic puzzle~3~MHF~+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------~AAAAAAAAAABBBBCCCCGBGBCBCBBBAAAAGBJBFCFCBBCCCCGBGBCBCBBBAAAAAAAAAABBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAACBHBCBCBCBCBEBAAAAAAAABBCBEBCBCBCBCBCBBBCCEBCBAACBHBCBCBCBCBEBAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAADBDBDBDBDBDBAAAAAAAAAAAADBDBDBDBDBDBBBBBBBAABBDBDBAAAAAAAAAAAAAABBBBAADBFBAAAAAAAAAAAABBBBBBAAAAECAAAAAAAAAAAAAABBAA');
 window.fullPuzzle = Puzzle.fromString('Basic puzzle~3~MHF~-- ---- ------ ---- ------      ------         -   -------    +           +           +    +      +    +      ++++++      ++++++     ++          ++           +                                   ++++++      +++++++++ +++       ++ ++      +++          +   +    +      +    +      ++++++      ++++++     ++          ++           +         -- ---- ------ ---- ------      ------         -   -------    +           +         ~AAAAAAAAAABBBBCCCCGBGBCBCBBBAAAAGBJBFCFCBBCCCCGBGBCBCBBBAAAAAAAAAABBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAACBHBCBCBCBCBEBAAAAAAAABBCBEBCBCBCBCBCBBBCCEBCBAACBHBCBCBCBCBEBAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAADBDBDBDBDBDBAAAAAAAAAAAADBDBDBDBDBDBBBBBBBAABBDBDBAAAAAAAAAAAAAABBBBAADBFBAAAAAAAAAAAABBBBBBAAAAECAAAAAAAAAAAAAABBAA');
 
 window.scene = {
@@ -39,41 +39,6 @@ window.scene = {
     }
 };
 
-function rayIntersect(start, vel) {
-    function modOne(x) {return (x % 1 + 1) % 1;}
-    let dir = new THREE.Vector3(Math.sign(vel.x), Math.sign(vel.y), Math.sign(vel.z));
-    let normVel = new THREE.Vector3(0, 0, 0).copy(vel).normalize();
-    let closestCellDist = new THREE.Vector3(0, 0, 0);
-    if(dir.x > 0) closestCellDist.x = 1 - modOne(start.x);
-    else closestCellDist.x = modOne(start.x);
-    if(dir.y > 0) closestCellDist.y = 1 - modOne(start.y);
-    else closestCellDist.y = modOne(start.y);
-    if(dir.z > 0) closestCellDist.z = 1 - modOne(start.z);
-    else closestCellDist.z = modOne(start.z);
-    let tMax = new THREE.Vector3(Math.abs(closestCellDist.x / normVel.x), Math.abs(closestCellDist.y / normVel.y), Math.abs(closestCellDist.z / normVel.z));
-    let tDelta = new THREE.Vector3(Math.abs(1 / normVel.x), Math.abs(1 / normVel.y), Math.abs(1 / normVel.z));
-    let curCell = new THREE.Vector3(Math.floor(start.x), Math.floor(start.y), Math.floor(start.z));
-    for(let count = 0; count < 100; count++) {
-        if(curCell.x >= 0 && curCell.y >= 0 && curCell.z >= 0 && curCell.x < curPuzzle.size[0] && curCell.y < curPuzzle.size[1] && curCell.z < curPuzzle.size[2]) {
-            let pos = curCell.x + (curCell.y + (curCell.z * curPuzzle.size[1])) * curPuzzle.size[0];
-            if(curPuzzle.shape[pos] != cell_broken) return pos;
-        }
-        let closest = Math.min(tMax.x, tMax.y, tMax.z);
-        if(closest == tMax.x) {
-            tMax.x += tDelta.x;
-            curCell.x += dir.x;
-        }
-        else if(closest == tMax.y) {
-            tMax.y += tDelta.y;
-            curCell.y += dir.y;
-        }
-        else if(closest == tMax.z) {
-            tMax.z += tDelta.z;
-            curCell.z += dir.z;
-        }
-    }
-    return -1;
-}
 window.render = function() {
     if(scene.input.selectedBlock != -1) scene.voxels[scene.input.selectedBlock].material = scene.materials.unsure;
     if(scene.input.latestEvent.shiftKey || scene.input.latestEvent.ctrlKey) {
@@ -130,7 +95,7 @@ window.createVoxelScene = function(){
     scene.geometry.wire = new THREE.EdgesGeometry(scene.geometry.box);
     scene.geometry.wire.scale(1.001, 1.001, 1.001);
     //Loop through voxels
-    const size = curPuzzle.size;
+    const size = puzzle.size;
     for(let x = 0; x < size[0]; x++) for(let y = 0; y < size[1]; y++) for(let z = 0; z < size[2]; z++) {
         //Find array index of voxels
         let position = x + (y + z * size[1]) * size[0];
@@ -139,16 +104,16 @@ window.createVoxelScene = function(){
     }
 }
 function voxelMesh(x, y, z, position) {
-    let cell = curPuzzle.shape[position];
+    let cell = puzzle.shape[position];
     let materials = [];
     for(let i = 0; i < 3; i++) {
-        let hint = curPuzzle.getHintPosition(position, i);
-        let material = getVoxelTexture(curPuzzle.hintsTotal[hint], curPuzzle.hintsPieces[hint], cell);
+        let hint = puzzle.getHintPosition(position, i);
+        let material = getVoxelTexture(puzzle.hintsTotal[hint], puzzle.hintsPieces[hint], cell);
         materials[i * 2] = material;
         materials[i * 2 + 1] = material;
     }
     let mesh = new THREE.Mesh(scene.geometry.box, materials);
-    let pos = new THREE.Vector3(x - curPuzzle.size[0] / 2 + 0.5, y - curPuzzle.size[1] / 2 + 0.5, z - curPuzzle.size[2] / 2 + 0.5);
+    let pos = new THREE.Vector3(x - puzzle.size[0] / 2 + 0.5, y - puzzle.size[1] / 2 + 0.5, z - puzzle.size[2] / 2 + 0.5);
     mesh.position.copy(pos);
 
     mesh.add(new THREE.LineSegments(scene.geometry.wire, scene.materials.wire));
@@ -211,8 +176,8 @@ window.updateRotation = function(forceSceneRegeneration) {
         scene.cardinal[i].setRotationFromEuler(new THREE.Euler(inp.xRot, inp.yRot, 0));
     }
     let visibleSideMap = (scene.camera.position.x > 0 ? 2 : 1) + (scene.camera.position.y > 0 ? 2 : 1) * 4 + (scene.camera.position.z > 0 ? 2 : 1) * 16;
-    if(oldVisibleSideMap != visibleSideMap||forceSceneRegeneration) for(let i = 0; i < curPuzzle.shapeSize; i++) {
-        let isVisible = (curPuzzle.visibleSides[i] & visibleSideMap) == 0 ? false : true;
+    if(oldVisibleSideMap != visibleSideMap||forceSceneRegeneration) for(let i = 0; i < puzzle.shapeSize; i++) {
+        let isVisible = (puzzle.visibleSides[i] & visibleSideMap) == 0 ? false : true;
         scene.voxels[i].visible = isVisible;
     }
 }
@@ -230,29 +195,8 @@ window.getCursorPosition = function () {
     yPixelStep.multiplyScalar((xRot < 0 ? -1 : 1) * scene.input.mouseY / scene.input.boxSize);
     let cursorPos = new THREE.Vector3(0, 0, 0).add(xPixelStep).add(yPixelStep).add(scene.camera.position);
     //scene.debug.cursorIndicator.position.set(cursorPos.x,cursorPos.y,cursorPos.z);
-    cursorPos.x += curPuzzle.size[0] / 2;
-    cursorPos.y += curPuzzle.size[1] / 2;
-    cursorPos.z += curPuzzle.size[2] / 2;
+    cursorPos.x += puzzle.size[0] / 2;
+    cursorPos.y += puzzle.size[1] / 2;
+    cursorPos.z += puzzle.size[2] / 2;
     return cursorPos;
-}
-window.generateSidesVisible = function () {
-    curPuzzle.visibleSides = [];
-    let spacing = [1, curPuzzle.size[0], curPuzzle.size[0] * curPuzzle.size[1]];
-    for(let x = 0; x < curPuzzle.size[0]; x++) for(let y = 0; y < curPuzzle.size[1]; y++) for(let z = 0; z < curPuzzle.size[2]; z++) {
-        let position = x + y * spacing[1] + z * spacing[2];
-        if(curPuzzle.shape[position] == cell_broken) {
-            curPuzzle.visibleSides[position] = 0;
-            continue;
-        }
-        let posArr = [x, y, z];
-        let visible = 0;
-        for(let dim = 0; dim < 3; dim++) {
-            let positionPositive = position + spacing[dim];
-            let positionNegative = position - spacing[dim];
-            if(posArr[dim] == 0 || curPuzzle.shape[positionNegative] == cell_broken) visible |= (4 ** dim);
-
-            if(posArr[dim] == curPuzzle.size[dim] - 1 || curPuzzle.shape[positionPositive] == cell_broken) visible |= (4 ** dim) * 2;
-        }
-        curPuzzle.visibleSides[position] = visible;
-    }
 }

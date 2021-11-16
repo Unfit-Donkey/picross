@@ -35,17 +35,25 @@ window.onmousemove = function (e) {
         scene.input.mouseY = -e.clientY + window.innerHeight / 2;
     }
     scene.input.latestEvent = e;
-    if(e.buttons & 1 == 1 || e.type == "touchmove") updateRotation();
+    if(e.buttons & 1 == 1 || e.type == "touchmove") {
+        if(e.ctrlKey) {
+
+        }
+        else if(e.shiftKey) {
+
+        }
+        else updateRotation();
+    }
 }
 window.addEventListener("touchmove", window.onmousemove);
 var slices = [-1, -2, -3];
 var focusedSlice = 0;
 function updateSlicer() {
     destroyObjects(scene.voxels, scene.obj);
-    curPuzzle = fullPuzzle.sliceUp(slices);
-    console.log(curPuzzle);
+    puzzle.sliceFrom(slices,fullPuzzle);
+    console.log(puzzle);
     createVoxelScene();
-    generateSidesVisible();
+    puzzle.generateSidesVisible();
     updateRotation(true);
 
     let focusedButtons = document.getElementsByClassName("slicer_button_focused");
@@ -69,7 +77,7 @@ function generateSlicer() {
             button.classList = "slicer_button";
             button.onclick = function () {
                 slices[i] = x;
-                focusedSlice=i;
+                focusedSlice = i;
                 updateSlicer();
             }
             layers[i].prepend(button);
@@ -79,16 +87,16 @@ function generateSlicer() {
             button.innerText = xyz.charAt(x);
             button.classList = "slicer_button";
             button.onclick = function () {
-                slices[slices.indexOf(-1-x)]=0;
+                slices[slices.indexOf(-1 - x)] = 0;
                 slices[i] = -1 - x;
-                focusedSlice=i;
+                focusedSlice = i;
                 updateSlicer();
             }
             layers[i].appendChild(button);
         }
     }
-    for(let i=fullPuzzle.dimension;i<layers.length;i++) {
-        layers[i].style.display="none";
+    for(let i = fullPuzzle.dimension; i < layers.length; i++) {
+        layers[i].style.display = "none";
 
     }
 }
@@ -132,9 +140,10 @@ document.body.onload = function () {
     createVoxelScene();
     resize();
     window.addEventListener("resize", resize);
-    generateSidesVisible();
+    puzzle.generateSidesVisible();
     updateRotation();
     generateSlicer();
+    updateSlicer();
 
     render();
 }
