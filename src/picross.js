@@ -167,9 +167,9 @@ export class Puzzle {
     }
     static fromBase64(str) {
         let unencoded = atob(str);
-        let data=new Uint8Array(unencoded.length);
-        let dataString = unencoded.split("").map((a,i)=>data[i] = a.charCodeAt(0));
-        let unzippedString = Pako.inflate(data,{to:"string"});
+        let data = new Uint8Array(unencoded.length);
+        let dataString = unencoded.split("").map((a, i) => data[i] = a.charCodeAt(0));
+        let unzippedString = Pako.inflate(data, {to: "string"});
         return Puzzle.fromString(unzippedString);
     }
     generateHints() {
@@ -215,26 +215,30 @@ export class Puzzle {
         let tMax = new THREE.Vector3(Math.abs(closestCellDist.x / normVel.x), Math.abs(closestCellDist.y / normVel.y), Math.abs(closestCellDist.z / normVel.z));
         let tDelta = new THREE.Vector3(Math.abs(1 / normVel.x), Math.abs(1 / normVel.y), Math.abs(1 / normVel.z));
         let curCell = new THREE.Vector3(Math.floor(start.x), Math.floor(start.y), Math.floor(start.z));
+        let recentFace = 0;
         for(let count = 0; count < 100; count++) {
             if(curCell.x >= 0 && curCell.y >= 0 && curCell.z >= 0 && curCell.x < this.size[0] && curCell.y < this.size[1] && curCell.z < this.size[2]) {
                 let pos = curCell.x + (curCell.y + (curCell.z * this.size[1])) * this.size[0];
-                if(this.shape[pos] != cell_broken) return pos;
+                if(this.shape[pos] != cell_broken) return {pos: pos, face: (recentFace * 2) + (vel[["xyz".charAt(recentFace)]] < 0 ? 1 : 0)};
             }
             let closest = Math.min(tMax.x, tMax.y, tMax.z);
             if(closest == tMax.x) {
                 tMax.x += tDelta.x;
                 curCell.x += dir.x;
+                recentFace = 0;
             }
             else if(closest == tMax.y) {
                 tMax.y += tDelta.y;
                 curCell.y += dir.y;
+                recentFace = 1;
             }
             else if(closest == tMax.z) {
                 tMax.z += tDelta.z;
                 curCell.z += dir.z;
+                recentFace = 2;
             }
         }
-        return -1;
+        return {pos:-1,face:-1};
     }
     generateSidesVisible() {
         this.visibleSides = [];

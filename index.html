@@ -1,10 +1,11 @@
 <html>
+
     <body>
         <script src="src/compiled/picrossCpp.js"></script>
         <script src="src/voxelviewer.js" type="module"></script>
         <script src="src/documentManager.js"></script>
         <link rel="stylesheet" href="page/style.css" type="text/css">
-
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
     </body>
     <canvas width="50" height="50" id="textRender" style="display:none"></canvas>
     <div id="slicer">
@@ -15,7 +16,39 @@
         <div class="slicer_layer"></div>
         <div class="slicer_layer"></div>
         <div class="slicer_layer"></div>
-
     </div>
+    <div id="option_buttons_holder">
+        <button class="option_button" onclick="updateScene()">Refresh</button>
+        <button class="option_button" onclick="solveCurrentPuzzle()">Solve</button>
+        <button class="option_button" onclick="copyPuzzle()">Copy</button>
+        <button class="option_button" onclick="pastePuzzle()">Paste</button>
+        <script>
+            function solveCurrentPuzzle() {
+                Module.setPuzzle(fullPuzzle.toString());
+                Module.solve();
+                fullPuzzle = Puzzle.fromString(Module.getPuzzle());
+                updateScene();
+            }
+            function copyPuzzle() {
+                let clipboard = document.getElementById("clipboard");
+                clipboard.innerText = fullPuzzle.toBase64();
+                navigator.clipboard.writeText(fullPuzzle.toBase64());
+            }
+            function pastePuzzle() {
+                let str = navigator.clipboard.readText().then(str => {
+                    try {
+                        fullPuzzle = Puzzle.fromBase64(str);
+                        updateScene();
+                    }
+                    catch(e) {
+                        console.log(e);
+                        alert("Invalid puzzle format");
+
+                    }
+                });
+            }
+        </script>
+    </div>
+    <div style="display:none" id="clipboard"> </div>
 
 </html>

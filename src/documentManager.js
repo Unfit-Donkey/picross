@@ -46,59 +46,6 @@ window.onmousemove = function (e) {
     }
 }
 window.addEventListener("touchmove", window.onmousemove);
-var slices = [-1, -2, -3];
-var focusedSlice = 0;
-function updateSlicer() {
-    destroyObjects(scene.voxels, scene.obj);
-    puzzle.sliceFrom(slices,fullPuzzle);
-    createVoxelScene();
-    puzzle.generateSidesVisible();
-    updateRotation(true);
-
-    let focusedButtons = document.getElementsByClassName("slicer_button_focused");
-    for(let i = focusedButtons.length - 1; i >= 0; i--) focusedButtons[i].classList.remove("slicer_button_focused");
-    let focusedLayer = document.getElementsByClassName("focused_layer");
-    if(focusedLayer.length != 0) focusedLayer[0].classList.remove("focused_layer");
-    let layers = document.getElementsByClassName("slicer_layer");
-    for(let i = 0; i < fullPuzzle.dimension; i++) {
-        let buttons = layers[i].children;
-        buttons[buttons.length - slices[i] - 4].classList.add("slicer_button_focused");
-    }
-    layers[focusedSlice].classList.add("focused_layer");
-}
-function generateSlicer() {
-    let layers = document.getElementsByClassName("slicer_layer");
-    for(let i = 0; i < fullPuzzle.dimension; i++) {
-        let xyz = "xyz";
-        for(let x = 0; x < fullPuzzle.size[i]; x++) {
-            let button = document.createElement("button");
-            button.innerText = x + 1;
-            button.classList = "slicer_button";
-            button.onclick = function () {
-                slices[i] = x;
-                focusedSlice = i;
-                updateSlicer();
-            }
-            layers[i].prepend(button);
-        }
-        for(let x = 0; x < 3; x++) {
-            let button = document.createElement("button");
-            button.innerText = xyz.charAt(x);
-            button.classList = "slicer_button";
-            button.onclick = function () {
-                slices[slices.indexOf(-1 - x)] = 0;
-                slices[i] = -1 - x;
-                focusedSlice = i;
-                updateSlicer();
-            }
-            layers[i].appendChild(button);
-        }
-    }
-    for(let i = fullPuzzle.dimension; i < layers.length; i++) {
-        layers[i].style.display = "none";
-
-    }
-}
 onkeydown = function (e) {
     scene.input.latestEvent = e;
     let key = e.key.toLowerCase();
@@ -136,13 +83,10 @@ onkeyup = function (e) {
 }
 document.body.onload = function () {
     createSceneBasics();
-    createVoxelScene();
     resize();
     window.addEventListener("resize", resize);
-    puzzle.generateSidesVisible();
-    updateRotation();
     generateSlicer();
-    updateSlicer();
+    updateScene();
 
     render();
 }

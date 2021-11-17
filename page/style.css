@@ -63,3 +63,31 @@ canvas {
 .slicer_layer button:nth-last-child(3) {
     background:#ffcccc;
 }
+
+#option_buttons_holder {
+    position:absolute;
+    display:inline-block;
+    right:10px;
+    top:10px;
+    text-align:right;
+    z-index:20;
+}
+.option_button {
+    display:block;
+    font-family:monospace;
+    font-size:1.5em;
+    width:100%;
+    text-align:right;
+    background:#eee;
+    border-style:dashed;
+    border-color:#000;
+    border-width:0px 0.05em 0.05em 0.05em;
+}
+.option_button:hover {
+    background:#f2f2f2;
+    font-weight:500;
+
+}
+.option_button:first-child {
+    border-top-width:0.05em;
+}

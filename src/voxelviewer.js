@@ -3,10 +3,10 @@ import {Puzzle} from "./picross.js";
 const cell_broken = 1;
 const cell_colored = 2;
 const cell_unsure = 3;
-window.Puzzle=Puzzle;
+window.Puzzle = Puzzle;
 window.THREE = THREE;
-window.puzzle = Puzzle.fromString('Basic puzzle~3~MHF~+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------~AAAAAAAAAABBBBCCCCGBGBCBCBBBAAAAGBJBFCFCBBCCCCGBGBCBCBBBAAAAAAAAAABBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAACBHBCBCBCBCBEBAAAAAAAABBCBEBCBCBCBCBCBBBCCEBCBAACBHBCBCBCBCBEBAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAADBDBDBDBDBDBAAAAAAAAAAAADBDBDBDBDBDBBBBBBBAABBDBDBAAAAAAAAAAAAAABBBBAADBFBAAAAAAAAAAAABBBBBBAAAAECAAAAAAAAAAAAAABBAA');
-window.fullPuzzle = Puzzle.fromString('Basic puzzle~3~MHF~-- ---- ------ ---- ------      ------         -   -------    +           +           +    +      +    +      ++++++      ++++++     ++          ++           +                                   ++++++      +++++++++ +++       ++ ++      +++          +   +    +      +    +      ++++++      ++++++     ++          ++           +         -- ---- ------ ---- ------      ------         -   -------    +           +         ~AAAAAAAAAABBBBCCCCGBGBCBCBBBAAAAGBJBFCFCBBCCCCGBGBCBCBBBAAAAAAAAAABBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAACBHBCBCBCBCBEBAAAAAAAABBCBEBCBCBCBCBCBBBCCEBCBAACBHBCBCBCBCBEBAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAADBDBDBDBDBDBAAAAAAAAAAAADBDBDBDBDBDBBBBBBBAABBDBDBAAAAAAAAAAAAAABBBBAADBFBAAAAAAAAAAAABBBBBBAAAAECAAAAAAAAAAAAAABBAA');
+window.puzzle = new Puzzle(3, [12, 7, 5], "Doggy");
+window.fullPuzzle = Puzzle.fromString('Basic puzzle~3~MHF~+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------~AAAAAAAAAABBBBCCCCGBGBCBCBBBAAAAGBJBFCFCBBCCCCGBGBCBCBBBAAAAAAAAAABBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAACBHBCBCBCBCBEBAAAAAAAABBCBEBCBCBCBCBCBBBCCEBCBAACBHBCBCBCBCBEBAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAADBDBDBDBDBDBAAAAAAAAAAAADBDBDBDBDBDBBBBBBBAABBDBDBAAAAAAAAAAAAAABBBBAADBFBAAAAAAAAAAAABBBBBBAAAAECAAAAAAAAAAAAAABBAA');
 
 window.scene = {
     camera: null,
@@ -40,13 +40,21 @@ window.scene = {
     }
 };
 
-window.render = function() {
-    if(scene.input.selectedBlock != -1) scene.voxels[scene.input.selectedBlock].material = scene.materials.unsure;
+window.render = function () {
     if(scene.input.latestEvent.shiftKey || scene.input.latestEvent.ctrlKey) {
         let cursorPos = getCursorPosition();
         let direction = new THREE.Vector3(0, 0, 0).copy(scene.camera.position).multiplyScalar(-1).normalize();
-        scene.input.selectedBlock = puzzle.rayIntersect(cursorPos, direction);
-        if(scene.input.selectedBlock != -1) scene.voxels[scene.input.selectedBlock].material = scene.materials.selected;
+        let intersection = puzzle.rayIntersect(cursorPos, direction);
+        if(intersection.pos!=-1) if(scene.input.selectedBlock != intersection.pos || scene.input.selectedFace != intersection.face) {
+            //scene.voxels[scene.input.selectedBlock].material = scene.materials.selected;
+            scene.faceSelector.position.copy(scene.voxels[intersection.pos].position);
+            scene.faceSelector.position["xxyyzz".charAt(intersection.face)] += 0.51 * (intersection.face % 2 == 0 ? -1 : 1);
+            let rot = new THREE.Euler(0, 0, 0);
+            rot["yyxxzz".charAt(intersection.face)] = Math.PI / 2;
+            scene.faceSelector.setRotationFromEuler(rot);
+        }
+        scene.input.selectedBlock = intersection.pos;
+        scene.input.selectedFace = intersection.face;
     }
     else scene.input.selectedBlock = -1;
     requestAnimationFrame(render);
@@ -60,7 +68,7 @@ window.destroyObjects = function (object, scene) {
     else if(object instanceof THREE.Material) return;
     else for(let i in object) destroyObjects(object[i], scene);
 }
-window.createSceneBasics = function(){
+window.createSceneBasics = function () {
     //Camera, scene, and renderer
     scene.renderer = new THREE.WebGLRenderer({antialias: true});
     scene.renderer.setClearColor(0xffffff);
@@ -88,10 +96,14 @@ window.createSceneBasics = function(){
         scene.camera.add(scene.cardinal[i]);
     }
     //Debug objects
+    scene.faceSelector = new THREE.Mesh(new THREE.PlaneGeometry(1, 1, 1, 1), new THREE.MeshStandardMaterial({color: 0x0000FF, side: THREE.DoubleSide}));
+    scene.obj.add(scene.faceSelector);
     //scene.debug.cursorIndicator=new THREE.Mesh(geometry,scene.materials.painted);
     //scene.obj.add(scene.debug.cursorIndicator);
 }
-window.createVoxelScene = function(){
+window.updateVoxels = function () {
+    destroyObjects(scene.voxels, scene.obj);
+    puzzle.generateSidesVisible();
     scene.geometry.box = new THREE.BoxGeometry(1, 1, 1);
     scene.geometry.wire = new THREE.EdgesGeometry(scene.geometry.box);
     scene.geometry.wire.scale(1.001, 1.001, 1.001);
@@ -103,6 +115,15 @@ window.createVoxelScene = function(){
         scene.voxels[position] = voxelMesh(x, y, z, position);
         scene.obj.add(scene.voxels[position]);
     }
+}
+window.updateScene = function (reset = false) {
+    if(reset) {
+        slices = [-1, -2, -3];
+        for(let i = 3; i < fullPuzzle.dimension; i++) slices.push(0);
+    }
+    puzzle.sliceFrom(slices, fullPuzzle);
+    updateVoxels();
+    updateRotation(true);
 }
 function voxelMesh(x, y, z, position) {
     let cell = puzzle.shape[position];
@@ -159,7 +180,7 @@ window.getTextTexture = function (num) {
     texture.anisotropy = 16;
     return texture;
 }
-window.updateRotation = function(forceSceneRegeneration) {
+window.updateRotation = function (forceSceneRegeneration) {
     let oldVisibleSideMap = (scene.camera.position.x > 0 ? 2 : 1) + (scene.camera.position.y > 0 ? 2 : 1) * 4 + (scene.camera.position.z > 0 ? 2 : 1) * 16;
     const mouseSpeed = 0.006;
     let inp = scene.input;
@@ -177,7 +198,7 @@ window.updateRotation = function(forceSceneRegeneration) {
         scene.cardinal[i].setRotationFromEuler(new THREE.Euler(inp.xRot, inp.yRot, 0));
     }
     let visibleSideMap = (scene.camera.position.x > 0 ? 2 : 1) + (scene.camera.position.y > 0 ? 2 : 1) * 4 + (scene.camera.position.z > 0 ? 2 : 1) * 16;
-    if(oldVisibleSideMap != visibleSideMap||forceSceneRegeneration) for(let i = 0; i < puzzle.shapeSize; i++) {
+    if(oldVisibleSideMap != visibleSideMap || forceSceneRegeneration) for(let i = 0; i < puzzle.shapeSize; i++) {
         let isVisible = (puzzle.visibleSides[i] & visibleSideMap) == 0 ? false : true;
         scene.voxels[i].visible = isVisible;
     }
@@ -200,4 +221,52 @@ window.getCursorPosition = function () {
     cursorPos.y += puzzle.size[1] / 2;
     cursorPos.z += puzzle.size[2] / 2;
     return cursorPos;
+}
+var slices = [-1, -2, -3];
+var focusedSlice = 0;
+window.updateSlicer = function () {
+    let focusedButtons = document.getElementsByClassName("slicer_button_focused");
+    for(let i = focusedButtons.length - 1; i >= 0; i--) focusedButtons[i].classList.remove("slicer_button_focused");
+    let focusedLayer = document.getElementsByClassName("focused_layer");
+    if(focusedLayer.length != 0) focusedLayer[0].classList.remove("focused_layer");
+    let layers = document.getElementsByClassName("slicer_layer");
+    for(let i = 0; i < fullPuzzle.dimension; i++) {
+        let buttons = layers[i].children;
+        buttons[buttons.length - slices[i] - 4].classList.add("slicer_button_focused");
+    }
+    layers[focusedSlice].classList.add("focused_layer");
+}
+window.generateSlicer = function () {
+    let layers = document.getElementsByClassName("slicer_layer");
+    for(let i = 0; i < fullPuzzle.dimension; i++) {
+        let xyz = "xyz";
+        for(let x = 0; x < fullPuzzle.size[i]; x++) {
+            let button = document.createElement("button");
+            button.innerText = x + 1;
+            button.classList = "slicer_button";
+            button.onclick = function () {
+                slices[i] = x;
+                focusedSlice = i;
+                updateScene();
+                updateSlicer();
+            }
+            layers[i].prepend(button);
+        }
+        for(let x = 0; x < 3; x++) {
+            let button = document.createElement("button");
+            button.innerText = xyz.charAt(x);
+            button.classList = "slicer_button";
+            button.onclick = function () {
+                slices[slices.indexOf(-1 - x)] = 0;
+                slices[i] = -1 - x;
+                focusedSlice = i;
+                updateSlicer();
+            }
+            layers[i].appendChild(button);
+        }
+    }
+    for(let i = fullPuzzle.dimension; i < layers.length; i++) {
+        layers[i].style.display = "none";
+
+    }
 }
