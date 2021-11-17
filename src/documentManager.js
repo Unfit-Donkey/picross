@@ -51,7 +51,6 @@ var focusedSlice = 0;
 function updateSlicer() {
     destroyObjects(scene.voxels, scene.obj);
     puzzle.sliceFrom(slices,fullPuzzle);
-    console.log(puzzle);
     createVoxelScene();
     puzzle.generateSidesVisible();
     updateRotation(true);

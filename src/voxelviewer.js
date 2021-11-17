@@ -3,6 +3,7 @@ import {Puzzle} from "./picross.js";
 const cell_broken = 1;
 const cell_colored = 2;
 const cell_unsure = 3;
+window.Puzzle=Puzzle;
 window.THREE = THREE;
 window.puzzle = Puzzle.fromString('Basic puzzle~3~MHF~+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------~AAAAAAAAAABBBBCCCCGBGBCBCBBBAAAAGBJBFCFCBBCCCCGBGBCBCBBBAAAAAAAAAABBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAACBHBCBCBCBCBEBAAAAAAAABBCBEBCBCBCBCBCBBBCCEBCBAACBHBCBCBCBCBEBAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAADBDBDBDBDBDBAAAAAAAAAAAADBDBDBDBDBDBBBBBBBAABBDBDBAAAAAAAAAAAAAABBBBAADBFBAAAAAAAAAAAABBBBBBAAAAECAAAAAAAAAAAAAABBAA');
 window.fullPuzzle = Puzzle.fromString('Basic puzzle~3~MHF~-- ---- ------ ---- ------      ------         -   -------    +           +           +    +      +    +      ++++++      ++++++     ++          ++           +                                   ++++++      +++++++++ +++       ++ ++      +++          +   +    +      +    +      ++++++      ++++++     ++          ++           +         -- ---- ------ ---- ------      ------         -   -------    +           +         ~AAAAAAAAAABBBBCCCCGBGBCBCBBBAAAAGBJBFCFCBBCCCCGBGBCBCBBBAAAAAAAAAABBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAACBHBCBCBCBCBEBAAAAAAAABBCBEBCBCBCBCBCBBBCCEBCBAACBHBCBCBCBCBEBAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAADBDBDBDBDBDBAAAAAAAAAAAADBDBDBDBDBDBBBBBBBAABBDBDBAAAAAAAAAAAAAABBBBAADBFBAAAAAAAAAAAABBBBBBAAAAECAAAAAAAAAAAAAABBAA');
@@ -44,7 +45,7 @@ window.render = function() {
     if(scene.input.latestEvent.shiftKey || scene.input.latestEvent.ctrlKey) {
         let cursorPos = getCursorPosition();
         let direction = new THREE.Vector3(0, 0, 0).copy(scene.camera.position).multiplyScalar(-1).normalize();
-        scene.input.selectedBlock = rayIntersect(cursorPos, direction);
+        scene.input.selectedBlock = puzzle.rayIntersect(cursorPos, direction);
         if(scene.input.selectedBlock != -1) scene.voxels[scene.input.selectedBlock].material = scene.materials.selected;
     }
     else scene.input.selectedBlock = -1;

@@ -1,3 +1,4 @@
+import * as Pako from "../lib/pako.js";
 export class Puzzle {
     constructor(dimension = 0, size = [], name = "Basic puzzle") {
         this.name = name;
@@ -137,7 +138,7 @@ export class Puzzle {
             for(let x = 0; x < width; x++) for(let y = 0; y < height; y++) {
                 let newPosition = x * this.spacing[xDir] + y * this.spacing[yDir];
                 let newHintPos = this.getHintPosition(newPosition, dim);
-                let oldPosition = oldBase + x * (puz.spacing[oldXDir]||0) + y * (puz.spacing[oldYDir]||0);
+                let oldPosition = oldBase + x * (puz.spacing[oldXDir] || 0) + y * (puz.spacing[oldYDir] || 0);
                 let oldHintPos = puz.getHintPosition(oldPosition, oldZDir);
                 this.hintsPieces[newHintPos] = puz.hintsPieces[oldHintPos];
                 this.hintsTotal[newHintPos] = puz.hintsTotal[oldHintPos];
@@ -161,7 +162,15 @@ export class Puzzle {
         return out;
     }
     toBase64() {
-
+        let string = this.toString();
+        return btoa(String.fromCharCode.apply(null, Pako.deflate(string)));
+    }
+    static fromBase64(str) {
+        let unencoded = atob(str);
+        let data=new Uint8Array(unencoded.length);
+        let dataString = unencoded.split("").map((a,i)=>data[i] = a.charCodeAt(0));
+        let unzippedString = Pako.inflate(data,{to:"string"});
+        return Puzzle.fromString(unzippedString);
     }
     generateHints() {
         this.hintsPieces = new Array(this.maxFaceSize * this.dimension);
