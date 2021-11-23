@@ -1,5 +1,6 @@
 import * as Pako from "../lib/pako.js";
 export class Puzzle {
+    //Constructors
     constructor(dimension = 0, size = [], name = "Basic puzzle") {
         this.name = name;
         this.dimension = dimension;
@@ -24,249 +25,221 @@ export class Puzzle {
             spacing *= this.size[i];
         }
     }
-    static fromString(str) {
-        var puz = new Puzzle();
-        const A = 'A'.charCodeAt(0);
-        let strs = str.split("~");
-        puz.name = strs[0];
-        puz.dimension = Number(strs[1]);
-        puz.size = [];
-        for(let i = 0; i < strs[2].length; i++) {
-            puz.size[i] = strs[2].charCodeAt(i) - A;
-        }
-        puz.calculateSizes();
-        puz.shape = new Array(puz.shapeSize);
-        for(let i = 0; i < strs[3].length; i++) {
-            let char = strs[3].charAt(i);
-            if(char == '+') puz.shape[i] = cell_colored;
-            else if(char == ' ') puz.shape[i] = cell_broken;
-            else puz.shape[i] = cell_unsure;
-        }
-        puz.hintsTotal = new Array(puz.maxFaceSize * puz.dimension);
-        puz.hintsPieces = new Array(puz.maxFaceSize * puz.dimension);
-        for(let i = 0; i < strs[4].length; i += 2) {
-            puz.hintsTotal[i / 2] = strs[4].charCodeAt(i) - A;
-        }
-        for(let i = 1; i < strs[4].length; i += 2) {
-            puz.hintsPieces[(i - 1) / 2] = strs[4].charCodeAt(i) - A;
-        }
-        return puz;
+}
+//Positional retrieval functions
+Puzzle.prototype.collapsePos = function (position) {
+    return position.map((p, i) => p * this.spacing[i]).reduce((a, b) => a + b);
+}
+Puzzle.prototype.getRow = function (pos, dim) {
+    let out = [];
+    let spacing = this.spacing[dim];
+    let start = pos % spacing + Math.floor(pos / this.spacing[dim + 1]) * this.spacing[dim + 1];
+    for(let i = 0; i < this.size[dim]; i++) {
+        out[i] = this.shape[start + spacing * i];
     }
-    collapsePos(position) {
-        let sliceSize = 1;
-        let out = 0;
-        for(let i = 0; i < position.length; i++) {
-            out += position[i] * sliceSize;
-            sliceSize *= this.size[i];
+    return out;
+}
+Puzzle.prototype.getHintPosition = function (positionIndex, direction) {
+    let below = positionIndex % this.spacing[direction];
+    let above = Math.floor(positionIndex / this.spacing[direction + 1]) * this.spacing[direction];
+    return this.maxFaceSize * direction + below + above;
+}
+//Extra data generation
+Puzzle.prototype.generateHints = function () {
+    this.hintsPieces = new Array(this.maxFaceSize * this.dimension);
+    this.hintsPieces.fill(0, 0, this.hintsPieces.length);
+    this.hintsTotal = new Array(this.maxFaceSize * this.dimension);
+    this.hintsTotal.fill(0, 0, this.hintsTotal.length);
+    foreachHint((cell, t, p, dim, i) => {
+        let row = getRow(cell, dim);
+        let total = 0, pieces = 0, prev = cell_broken;
+        for(let x = 0; x < row.length; x++) {
+            if(row[x] == cell_colored) {
+                total++;
+                if(prev == cell_broken) pieces++;
+            }
+            prev = row[x];
         }
-        return out;
-    }
-    getRow(position) {
-        let dim = position.indexOf(-1);
-        let out = [];
-        let spacing = 1;
-        for(let i = 0; i < dim; i++) spacing *= this.size[i];
-        let start = this.collapsePos(position) + spacing;
-        for(let i = 0; i < this.size[dim]; i++) {
-            out[i] = this.shape[start + spacing * i];
+        if(total == 0) pieces = 1;
+        this.hintsPieces[dim + this.maxFaceSize * i] = pieces;
+        this.hintsTotal[dim + this.maxFaceSize * i] = total;
+    });
+}
+Puzzle.prototype.generateSidesVisible = function () {
+    this.visibleSides = [];
+    let spacing = [1, this.size[0], this.size[0] * this.size[1]];
+    this.foreachCell((cell, i, pos) => {
+        if(cell == cell_broken) return this.visibleSides[i] = 0;
+        let visible = 0;
+        for(let dim = 0; dim < this.dimension; dim++) {
+            let indexInRow = Math.floor(i / this.spacing[dim]) % this.size[dim];
+            let spa = spacing[dim];
+            if(indexInRow == 0 || this.shape[i - spa] == cell_broken) visible |= (4 ** dim);
+            if(indexInRow == this.size[dim] - 1 || this.shape[i + spa] == cell_broken) visible |= (4 ** dim) * 2;
         }
-        return out;
-    }
-    getHintPosition(positionIndex, direction) {
-        let below = positionIndex % this.spacing[direction];
-        let above = Math.floor(positionIndex / this.spacing[direction + 1]) * this.spacing[direction];
-        return this.maxFaceSize * direction + below + above;
-    }
-    getCell(position) {
-        const pos = p5Vector(position);
-        let flatPos = 0;
-        let sliceSize = 1;
+        this.visibleSides[i] = visible;
+    });
+}
+Puzzle.prototype.sliceFrom = function (dims, puz) {
+    //Find x, y, and z axis
+    this.size = [];
+    for(let i in [0, 1, 2]) this.size[i] = puz.size[dims.indexOf(-1 - i)] || 1;
+    this.dimension = 3;
+    this.calculateSizes();
+    this.shape = new Array(this.shapeSize);
+    this.hintsTotal = new Array(this.maxFaceSize * this.dimension);
+    this.hintsPieces = new Array(this.maxFaceSize * this.dimension).fill(0);
+    //Copy cells
+    this.foreachCell((cell, i, pos) => {
+        //Find position in original map
+        let oldPos = dims.slice();
+        for(let i in [0, 1, 2]) oldPos[dims.indexOf(-1 - i)] = pos[i];
+        this.shape[i] = puz.shape[puz.collapsePos(oldPos)];
+    });
+    this.foreachHint((cell, total, pieces, dim, i) => {
+        let hintPos = i + dim * this.maxFaceSize;
+        if(dims.indexOf(-1 - dim) == -1) {
+            this.hintsTotal[hintPos] = 0;
+            this.hintsPieces[hintPos] = 0;
+            return;
+        }
+        let position = [];
         for(let i = 0; i < this.dimension; i++) {
-            flatPos += pos[i] * sliceSize;
-            if(pos[i] > this.size[i] || pos[i] < 0) return -1;
-            sliceSize *= this.size[i];
+            position[i] = cell % this.size[i];
+            cell = Math.floor(cell / this.size[i]);
         }
-        return this.shape[flatPos];
-    }
-    sliceFrom(dims, puz) {
-        //Find x, y, and z axis
-        this.size = [0, 0, 0];
-        let xAxis = dims.indexOf(-1);
-        let yAxis = dims.indexOf(-2);
-        let zAxis = dims.indexOf(-3);
-        this.size[0] = puz.size[xAxis] || 1;
-        this.size[1] = puz.size[yAxis] || 1;
-        this.size[2] = puz.size[zAxis] || 1;
-        this.dimension = 3;
-        this.calculateSizes();
-        this.shape = new Array(this.shapeSize);
-        this.hintsTotal = new Array(this.maxFaceSize * this.dimension);
-        this.hintsPieces = new Array(this.maxFaceSize * this.dimension).fill(0);
-        let pos = dims.slice();
-        //Loop through each cube in the destination map
-        for(let x = 0; x < this.size[0]; x++) {
-            pos[xAxis] = x;
-            for(let y = 0; y < this.size[1]; y++) {
-                pos[yAxis] = y;
-                for(let z = 0; z < this.size[2]; z++) {
-                    pos[zAxis] = z;
-                    //Find position in original map
-                    let oldPos = 0;
-                    for(let i = dims.length - 1; i >= 1; i--) oldPos = (pos[i] + oldPos) * puz.size[i - 1];
-                    oldPos += pos[0];
-                    //Find position in new map
-                    let newPos = x + (y + (z * this.size[1])) * this.size[0];
-                    //Copy voxel
-                    this.shape[newPos] = puz.shape[oldPos];
-                }
-            }
+        position[dim] = 0;
+        let newPosition = dims.slice();
+        for(let i = 0; i < 3; i++) newPosition[dims.indexOf(-1 - i)] = position[i];
+        let oldHintPosition = puz.getHintPosition(puz.collapsePos(newPosition), dims.indexOf(-1 - dim));
+        this.hintsTotal[hintPos] = puz.hintsTotal[oldHintPosition];
+        this.hintsPieces[hintPos] = puz.hintsPieces[oldHintPosition];
+    });
+}
+Puzzle.prototype.rayIntersect = function (start, vel) {
+    let velocityMagnitude = Math.sqrt(vel[0] * vel[0] + vel[1] * vel[1] + vel[2] * vel[2]);
+    //Setup starting variables
+    let normVel = vel.map(v => v / velocityMagnitude);
+    let dir = vel.map(v => Math.sign(v));
+    let closestCell = start.map((v, i) => dir[i] > 0 ? 1 : 0 + (dir[i] > 0 ? -1 : 1) * ((v % 1 + 1) % 1));
+    let tDelta = normVel.map(v => Math.abs(1 / v));
+    let tMax = tDelta.map((v, i) => closestCell[i] * v);
+    //Variables that keep track of state
+    let curCell = start.map(v => Math.floor(v));
+    let recentFace = 0;
+    let pos = this.collapsePos(curCell);
+    //Raycast loop
+    for(let count = 0; count < 100; count++) {
+        //Check if intersects cube
+        if(curCell.every(v => v >= 0) && curCell.every((v, i) => v < this.size[i])) {
+            if(this.shape[pos] != cell_broken) return {pos: pos, face: (recentFace * 2) + (dir[recentFace] < 0 ? 1 : 0)};
         }
-        //Loop through each face
-        for(let dim = 0; dim < 3; dim++) if([xAxis, yAxis, zAxis][dim] != -1) {
-            let xDir = [1, 0, 0][dim];
-            let yDir = [2, 2, 1][dim];
-            let oldXDir = dims.indexOf(-1 - xDir);
-            let oldYDir = dims.indexOf(-1 - yDir);
-            let oldZDir = dims.indexOf(-1 - dim);
-            let width = this.size[xDir];
-            let height = this.size[yDir];
-            let basePosition = dims.slice();
-            basePosition[oldXDir] = 0;
-            basePosition[oldYDir] = 0;
-            basePosition[oldZDir] = 0;
-            let oldBase = puz.collapsePos(basePosition);
-            for(let x = 0; x < width; x++) for(let y = 0; y < height; y++) {
-                let newPosition = x * this.spacing[xDir] + y * this.spacing[yDir];
-                let newHintPos = this.getHintPosition(newPosition, dim);
-                let oldPosition = oldBase + x * (puz.spacing[oldXDir] || 0) + y * (puz.spacing[oldYDir] || 0);
-                let oldHintPos = puz.getHintPosition(oldPosition, oldZDir);
-                this.hintsPieces[newHintPos] = puz.hintsPieces[oldHintPos];
-                this.hintsTotal[newHintPos] = puz.hintsTotal[oldHintPos];
-            }
+        //Advance along closest plane to tip of ray
+        let closest = Math.min(tMax[0], tMax[1], tMax[2]);
+        for(let i = 0; i < 3; i++) if(closest == tMax[i]) {
+            tMax[i] += tDelta[i];
+            curCell[i] += dir[i];
+            recentFace = i;
+            pos += dir[i] * this.spacing[i];
+            break;
         }
     }
-    toString() {
-        let out = this.name + "~" + this.dimension + "~";
-        const A = 'A'.charCodeAt(0);
-        for(let i = 0; i < this.dimension; i++) {
-            out += String.fromCharCode(A + this.size[i]);
-        }
-        out += "~";
-        for(let i = 0; i < this.shapeSize; i++) {
-            out += this.shape[i] == cell_unsure ? "-" : (this.shape[i] == cell_colored ? "+" : " ");
-        }
-        out += "~";
-        for(let i = 0; i < this.dimension * this.maxFaceSize; i++) {
-            out += String.fromCharCode(A + this.hintsTotal[i], A + this.hintsPieces[i]);
-        }
-        return out;
-    }
-    toBase64() {
-        let string = this.toString();
-        return btoa(String.fromCharCode.apply(null, Pako.deflate(string)));
-    }
-    static fromBase64(str) {
-        let unencoded = atob(str);
-        let data = new Uint8Array(unencoded.length);
-        let dataString = unencoded.split("").map((a, i) => data[i] = a.charCodeAt(0));
-        let unzippedString = Pako.inflate(data, {to: "string"});
-        return Puzzle.fromString(unzippedString);
-    }
-    generateHints() {
-        this.hintsPieces = new Array(this.maxFaceSize * this.dimension);
-        this.hintsPieces.fill(0, 0, this.hintsPieces.length);
-        this.hintsTotal = new Array(this.maxFaceSize * this.dimension);
-        this.hintsTotal.fill(0, 0, this.hintsTotal.length);
-        for(let i = 0; i < this.shapeSize; i++) {
-            for(let dim = 0; dim < this.dimension; dim++) {
-                let hint = this.getHintPosition(i, dim);
-                //To prevent duplicate calculations
-                if(this.hintsPieces[hint] != 0) continue;
-                let spacing = 1;
-                if(dim < 0 || dim > 2) console.log(dim);
-                for(let x = 0; x < dim; x++) spacing *= this.size[x];
-                //Set i to first cell in the row
-                let firstCell = Math.floor((i / spacing) / this.size[dim]) * spacing * this.size[dim] + i % spacing;
-                let total = 0, pieces = 0, prev = cell_broken;
-                for(let x = 0; x < this.size[dim]; x++) {
-                    let cell = firstCell + x * spacing;
-                    if(this.shape[cell] == cell_colored) {
-                        total++;
-                        if(prev == cell_broken) pieces++;
-                    }
-                    prev = this.shape[cell];
-                }
-                this.hintsPieces[hint] = pieces;
-                this.hintsTotal[hint] = total;
-            }
-        }
-    }
-    rayIntersect(start, vel) {
-        function modOne(x) {return (x % 1 + 1) % 1;}
-        let dir = new THREE.Vector3(Math.sign(vel.x), Math.sign(vel.y), Math.sign(vel.z));
-        let normVel = new THREE.Vector3(0, 0, 0).copy(vel).normalize();
-        let closestCellDist = new THREE.Vector3(0, 0, 0);
-        if(dir.x > 0) closestCellDist.x = 1 - modOne(start.x);
-        else closestCellDist.x = modOne(start.x);
-        if(dir.y > 0) closestCellDist.y = 1 - modOne(start.y);
-        else closestCellDist.y = modOne(start.y);
-        if(dir.z > 0) closestCellDist.z = 1 - modOne(start.z);
-        else closestCellDist.z = modOne(start.z);
-        let tMax = new THREE.Vector3(Math.abs(closestCellDist.x / normVel.x), Math.abs(closestCellDist.y / normVel.y), Math.abs(closestCellDist.z / normVel.z));
-        let tDelta = new THREE.Vector3(Math.abs(1 / normVel.x), Math.abs(1 / normVel.y), Math.abs(1 / normVel.z));
-        let curCell = new THREE.Vector3(Math.floor(start.x), Math.floor(start.y), Math.floor(start.z));
-        let recentFace = 0;
-        for(let count = 0; count < 100; count++) {
-            if(curCell.x >= 0 && curCell.y >= 0 && curCell.z >= 0 && curCell.x < this.size[0] && curCell.y < this.size[1] && curCell.z < this.size[2]) {
-                let pos = curCell.x + (curCell.y + (curCell.z * this.size[1])) * this.size[0];
-                if(this.shape[pos] != cell_broken) return {pos: pos, face: (recentFace * 2) + (vel[["xyz".charAt(recentFace)]] < 0 ? 1 : 0)};
-            }
-            let closest = Math.min(tMax.x, tMax.y, tMax.z);
-            if(closest == tMax.x) {
-                tMax.x += tDelta.x;
-                curCell.x += dir.x;
-                recentFace = 0;
-            }
-            else if(closest == tMax.y) {
-                tMax.y += tDelta.y;
-                curCell.y += dir.y;
-                recentFace = 1;
-            }
-            else if(closest == tMax.z) {
-                tMax.z += tDelta.z;
-                curCell.z += dir.z;
-                recentFace = 2;
-            }
-        }
-        return {pos:-1,face:-1};
-    }
-    generateSidesVisible() {
-        this.visibleSides = [];
-        let spacing = [1, this.size[0], this.size[0] * this.size[1]];
-        for(let x = 0; x < this.size[0]; x++) for(let y = 0; y < this.size[1]; y++) for(let z = 0; z < this.size[2]; z++) {
-            let position = x + y * spacing[1] + z * spacing[2];
-            if(this.shape[position] == cell_broken) {
-                this.visibleSides[position] = 0;
-                continue;
-            }
-            let posArr = [x, y, z];
-            let visible = 0;
-            for(let dim = 0; dim < 3; dim++) {
-                let positionPositive = position + spacing[dim];
-                let positionNegative = position - spacing[dim];
-                if(posArr[dim] == 0 || this.shape[positionNegative] == cell_broken) visible |= (4 ** dim);
-
-                if(posArr[dim] == this.size[dim] - 1 || this.shape[positionPositive] == cell_broken) visible |= (4 ** dim) * 2;
-            }
-            this.visibleSides[position] = visible;
+    return {pos: -1, face: -1};
+}
+//Foreach functions
+Puzzle.prototype.foreachCell = function (func) {
+    let pos = new Array(this.dimension);
+    pos.fill(0);
+    for(let i = 0; i < this.shapeSize; i++) {
+        func(this.shape[i], i, pos);
+        pos[0]++;
+        let x = -1;
+        while(pos[++x] >= this.size[x]) {
+            pos[x] = 0;
+            pos[x + 1]++;
         }
     }
 }
-function p5Vector(cell) {
-    if(typeof cell.x != "undefined") {
-        return [cell.x, cell.y, cell.z];
+Puzzle.prototype.foreachHint = function (func) {
+    for(let dim = 0; dim < this.dimension; dim++) {
+        for(let i = 0; i < this.shapeSize / this.size[dim]; i++) {
+            let cell = Math.floor(i / this.spacing[dim]) * this.spacing[dim + 1] + i % this.spacing[dim];
+            let hintPos = i + dim * this.maxFaceSize;
+            func(cell, this.hintsTotal[hintPos], this.hintsPieces[hintPos], dim, i);
+        }
     }
-    else return cell;
+}
+//Utility Functions
+Puzzle.prototype.deleteZeroedRows = function () {
+    this.foreachHint((cell, total, pieces, dim) => {
+        if(total == 0 && pieces == 1) {
+            for(let i = 0; i < this.size[dim]; i++) {
+                this.shape[cell + this.spacing[dim] * i] = cell_broken;
+            }
+        }
+    });
+}
+Puzzle.prototype.generateActionableRows = function () {
+
+}
+//Export functions
+Puzzle.prototype.toString = function () {
+    const A = 'A'.charCodeAt(0);
+    //Sizes and dimension
+    let out = this.name + "~"
+        + this.dimension + "~"
+        + this.size.map(size => String.fromCharCode(A + size)).join("") + "~"
+        //Shape
+        + this.shape.map(cell => cell == cell_unsure ? "-" : (cell == cell_colored ? "+" : " ")).join("") + "~";
+    //Hints
+    for(let i = 0; i < this.dimension; i++) {
+        for(let x = 0; x < this.shapeSize / this.size[i]; x++) {
+            let index = i * this.maxFaceSize + x;
+            out += String.fromCharCode(A + this.hintsTotal[index], A + this.hintsPieces[index]);
+        }
+    }
+    return out;
+}
+Puzzle.prototype.toBase64 = function () {
+    let string = this.toString();
+    return btoa(String.fromCharCode.apply(null, Pako.deflate(string)));
+}
+//Import functions
+Puzzle.fromString = function (str) {
+    var puz = new Puzzle();
+    const A = 'A'.charCodeAt(0);
+    let strs = str.split("~");
+    puz.name = strs[0];
+    puz.dimension = Number(strs[1]);
+    puz.size = strs[2].split("").map(c => c.charCodeAt(0) - A);
+    puz.calculateSizes();
+    puz.shape = new Array(puz.shapeSize);
+    for(let i = 0; i < strs[3].length; i++) {
+        let char = strs[3].charAt(i);
+        if(char == '+') puz.shape[i] = cell_colored;
+        else if(char == ' ') puz.shape[i] = cell_broken;
+        else puz.shape[i] = cell_unsure;
+    }
+    puz.hintsTotal = new Array(puz.maxFaceSize * puz.dimension);
+    puz.hintsPieces = new Array(puz.maxFaceSize * puz.dimension);
+    let index = 0;
+    for(let dim = 0; dim < puz.dimension; dim++) {
+        for(let x = 0; x < puz.shapeSize / puz.size[dim]; x++) {
+            let hintPos = dim * puz.maxFaceSize + x;
+            puz.hintsTotal[hintPos] = strs[4].charCodeAt(index) - A;
+            puz.hintsPieces[hintPos] = strs[4].charCodeAt(index + 1) - A;
+            index += 2;
+        }
+    }
+    return puz;
+
+}
+Puzzle.fromBase64 = function (str) {
+    let unencoded = atob(str);
+    let data = new Uint8Array(unencoded.length);
+    unencoded.split("").map((a, i) => data[i] = a.charCodeAt(0));
+    let unzippedString = Pako.inflate(data, {to: "string"});
+    return Puzzle.fromString(unzippedString);
 }
 const cell_broken = 1;
 const cell_colored = 2;

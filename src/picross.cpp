@@ -83,9 +83,14 @@ public:
         //Copy hints
         free(hints);
         hints = (Hint*)calloc(dimension * maxFaceSize, sizeof(Hint));
-        for(int i = 0;i < strs[4].size();i += 2) {
-            hints[i / 2].total = strs[4][i] - 'A';
-            hints[i / 2].pieceCount = strs[4][i + 1] - 'A';
+        int index = 0;
+        for(int dim = 0; dim < dimension; dim++) {
+            for(int x = 0; x < shapeSize / size[dim]; x++) {
+                int hintPos = dim * maxFaceSize + x;
+                hints[hintPos].total = strs[4][index] - 'A';
+                hints[hintPos].pieceCount = strs[4][index + 1] - 'A';
+                index += 2;
+            }
         }
     }
     Puzzle(int dim, int* siz, string nam) {
@@ -184,8 +189,11 @@ public:
         }
         //Hints
         out += "~";
-        for(int i = 0;i < maxFaceSize * dimension;i++) {
-            out += string(1, char('A' + hints[i].total)) + string(1, char('A' + hints[i].pieceCount));
+        for(int dim = 0;dim < dimension;dim++) {
+            for(int x = 0;x < shapeSize / size[dim];x++) {
+                int ind = maxFaceSize * dim + x;
+                out += string(1, char('A' + hints[ind].total)) + string(1, char('A' + hints[ind].pieceCount));
+            }
         }
         return out;
     }

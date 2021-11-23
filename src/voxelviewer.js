@@ -6,7 +6,7 @@ const cell_unsure = 3;
 window.Puzzle = Puzzle;
 window.THREE = THREE;
 window.puzzle = new Puzzle(3, [12, 7, 5], "Doggy");
-window.fullPuzzle = Puzzle.fromString('Basic puzzle~3~MHF~+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------~AAAAAAAAAABBBBCCCCGBGBCBCBBBAAAAGBJBFCFCBBCCCCGBGBCBCBBBAAAAAAAAAABBBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAACBHBCBCBCBCBEBAAAAAAAABBCBEBCBCBCBCBCBBBCCEBCBAACBHBCBCBCBCBEBAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAADBDBDBDBDBDBAAAAAAAAAAAADBDBDBDBDBDBBBBBBBAABBDBDBAAAAAAAAAAAAAABBBBAADBFBAAAAAAAAAAAABBBBBBAAAAECAAAAAAAAAAAAAABBAA');
+window.fullPuzzle = Puzzle.fromString('Basic puzzle~3~MHF~+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------~AAAAAAAAAABBBBCCCCGBGBCBCBBBAAAAGBJBFCFCBBCCCCGBGBCBCBBBAAAAAAAAAABBBBAAAACBAAAAAAAAAAAAAAAAAAAACBHBCBCBCBCBEBAAAAAAAABBCBEBCBCBCBCBCBBBCCEBCBAACBHBCBCBCBCBEBAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAADBDBDBDBDBDBAAAAAAAAAAAADBDBDBDBDBDBBBBBBBAABBDBDBAAAAAAAAAAAAAABBBBAADBFBAAAAAAAAAAAABBBBBBAAAAECAAAAAAAAAAAAAABBAA');
 
 window.scene = {
     camera: null,
@@ -44,8 +44,8 @@ window.render = function () {
     if(scene.input.latestEvent.shiftKey || scene.input.latestEvent.ctrlKey) {
         let cursorPos = getCursorPosition();
         let direction = new THREE.Vector3(0, 0, 0).copy(scene.camera.position).multiplyScalar(-1).normalize();
-        let intersection = puzzle.rayIntersect(cursorPos, direction);
-        if(intersection.pos!=-1) if(scene.input.selectedBlock != intersection.pos || scene.input.selectedFace != intersection.face) {
+        let intersection = puzzle.rayIntersect(cursorPos.toArray(), direction.toArray());
+        if(intersection.pos != -1) if(scene.input.selectedBlock != intersection.pos || scene.input.selectedFace != intersection.face) {
             //scene.voxels[scene.input.selectedBlock].material = scene.materials.selected;
             scene.faceSelector.position.copy(scene.voxels[intersection.pos].position);
             scene.faceSelector.position["xxyyzz".charAt(intersection.face)] += 0.51 * (intersection.face % 2 == 0 ? -1 : 1);
@@ -188,8 +188,7 @@ window.updateRotation = function (forceSceneRegeneration) {
     inp.xRot += (inp.pmouseY - inp.mouseY) * mouseSpeed;
     if(inp.xRot > Math.PI / 2) inp.xRot = Math.PI / 2;
     if(inp.xRot < -Math.PI / 2) inp.xRot = -Math.PI / 2;
-    if(inp.yRot > Math.PI * 2) inp.yRot -= Math.PI * 2;
-    if(inp.yRot < 0) inp.yRot += Math.PI * 2;
+    inp.yRot = (inp.yRot + Math.PI * 2) % (Math.PI * 2);
     scene.camera.position.set(Math.sin(inp.yRot) * - Math.cos(inp.xRot), Math.sin(inp.xRot), Math.cos(inp.xRot) * Math.cos(inp.yRot));
     scene.camera.position.multiplyScalar(50);
     scene.camera.lookAt(0, 0, 0);
@@ -205,25 +204,29 @@ window.updateRotation = function (forceSceneRegeneration) {
 }
 //Returns the position of the cursor in 3d space
 window.getCursorPosition = function () {
-    let xRot = scene.input.xRot;
-    let yRot = scene.input.yRot;
-    let xPixelStep = new THREE.Vector3(1, 0, Math.tan(yRot)).normalize();
-    if(yRot > Math.PI / 2 && yRot < 3 * Math.PI / 2) {
-        xPixelStep.x = -xPixelStep.x;
-        xPixelStep.z = -xPixelStep.z;
+    const normalize = vector => {
+        let magnitude = Math.sqrt(vector[0] ** 2 + vector[1] ** 2 + vector[2] ** 2);
+        return vector.map(v => v / magnitude);
     }
-    let yPixelStep = new THREE.Vector3(Math.sin(yRot), 1 / Math.tan(xRot), -Math.cos(yRot)).normalize();
-    xPixelStep.multiplyScalar(scene.input.mouseX / scene.input.boxSize);
-    yPixelStep.multiplyScalar((xRot < 0 ? -1 : 1) * scene.input.mouseY / scene.input.boxSize);
-    let cursorPos = new THREE.Vector3(0, 0, 0).add(xPixelStep).add(yPixelStep).add(scene.camera.position);
-    //scene.debug.cursorIndicator.position.set(cursorPos.x,cursorPos.y,cursorPos.z);
-    cursorPos.x += puzzle.size[0] / 2;
-    cursorPos.y += puzzle.size[1] / 2;
-    cursorPos.z += puzzle.size[2] / 2;
-    return cursorPos;
+    let inp = scene.input;
+    let xRot = inp.xRot;
+    let yRot = inp.yRot;
+    let xPixelStep = normalize([1, 0, Math.tan(yRot)]);
+    //Reverse xPixel step if looking the other way
+    if(yRot > Math.PI / 2 && yRot < 3 * Math.PI / 2) {
+        xPixelStep[0] = -xPixelStep[0];
+        xPixelStep[2] = -xPixelStep[2];
+    }
+    let yPixelStep = normalize([Math.sin(yRot), 1 / Math.tan(xRot), -Math.cos(yRot)]);
+    return yPixelStep.map((yStep, i) => {
+        return yStep * Math.sign(xRot) * inp.mouseX / inp.mouseY
+            + xPixelStep[i] * inp.mouseX / inp.boxSize
+            + scene.camera.position["xyz".charAt(i)]
+            + puzzle.size[i] / 2;
+    });
 }
-var slices = [-1, -2, -3];
-var focusedSlice = 0;
+window.slices = [-1, -2, -3];
+window.focusedSlice = 0;
 window.updateSlicer = function () {
     let focusedButtons = document.getElementsByClassName("slicer_button_focused");
     for(let i = focusedButtons.length - 1; i >= 0; i--) focusedButtons[i].classList.remove("slicer_button_focused");
@@ -260,6 +263,7 @@ window.generateSlicer = function () {
                 slices[slices.indexOf(-1 - x)] = 0;
                 slices[i] = -1 - x;
                 focusedSlice = i;
+                updateScene();
                 updateSlicer();
             }
             layers[i].appendChild(button);

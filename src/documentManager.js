@@ -48,12 +48,15 @@ window.onmousemove = function (e) {
 window.addEventListener("touchmove", window.onmousemove);
 onkeydown = function (e) {
     scene.input.latestEvent = e;
+    scene.input.pmouseX = scene.input.mouseX;
+    scene.input.pmouseY = scene.input.mouseY;
     let key = e.key.toLowerCase();
     if(key == "d") // Slider left
-        if(slices[focusedSlice] != -3) {slices[focusedSlice]--; updateSlicer();}
+        if(slices[focusedSlice] != -3) {slices[focusedSlice]--; updateScene(); updateSlicer();}
     if(key == "a") //Slider right
         if(slices[focusedSlice] != fullPuzzle.size[focusedSlice] - 1) {
             slices[focusedSlice]++;
+            updateScene();
             updateSlicer();
         }
     if(key == "w") //Slider focus up
@@ -66,6 +69,7 @@ onkeydown = function (e) {
         if(digit == -1) digit = 9;
         if(digit < fullPuzzle.size[focusedSlice]) {
             slices[focusedSlice] = digit;
+            updateScene();
             updateSlicer();
         }
     }
@@ -75,6 +79,7 @@ onkeydown = function (e) {
         if(slices.indexOf(-1 - i) != -1)
             slices[slices.indexOf(-1 - i)] = 0;
         slices[focusedSlice] = -1 - i;
+        updateScene();
         updateSlicer();
     }
 }
