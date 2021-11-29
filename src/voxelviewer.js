@@ -227,6 +227,7 @@ window.getCursorPosition = function () {
 }
 window.slices = [-1, -2, -3];
 window.focusedSlice = 0;
+window.minorAxis = {active: false, axis: -1, direction: -1};
 window.updateSlicer = function () {
     let focusedButtons = document.getElementsByClassName("slicer_button_focused");
     for(let i = focusedButtons.length - 1; i >= 0; i--) focusedButtons[i].classList.remove("slicer_button_focused");
@@ -234,8 +235,8 @@ window.updateSlicer = function () {
     if(focusedLayer.length != 0) focusedLayer[0].classList.remove("focused_layer");
     let layers = document.getElementsByClassName("slicer_layer");
     for(let i = 0; i < fullPuzzle.dimension; i++) {
-        let buttons = layers[i].children;
-        fromId("slicer_button_" + i + "_" + slices[i]).classList.add("slicer_button_focused");
+        if(slices[i] < 0) layers[i].children[0].innerText = "xyz".charAt(-1 - slices[i]);
+        else layers[i].children[0].innerText = slices[i] + 1;
     }
     layers[focusedSlice].classList.add("focused_layer");
 }
@@ -247,24 +248,43 @@ window.generateSlicer = function () {
         updateScene();
         return;
     }
-    let layers = document.getElementsByClassName("slicer_layer");
     for(let i = 0; i < fullPuzzle.dimension; i++) {
         let layer = document.createElement("div");
-        slicer.appendChild(layer);
+        layer.id = "slicer_layer_" + i;
+        layer.appendChild(document.createElement("span"));
+        layer.children[0].classList.add("slicer_display");
         layer.classList = "slicer_layer";
         let xyz = "xyz";
-        for(let x = 0; x < fullPuzzle.size[i]; x++) {
+        for(let x = 0; x < 2; x++) {
             let button = document.createElement("button");
-            button.innerText = x + 1;
+            button.innerText = "+-".charAt(x);
             button.classList = "slicer_button";
-            button.id = "slicer_button_" + i + "_" + x;
+            button.id = "slicer_button_" + i + "_" + ["plus", "minus"][x];
             button.onclick = function () {
-                slices[i] = x;
+                //Create minor axis
+                if(slices[i] < 0) {
+                    minorAxis.direction = - 1 - slices[i];
+                    minorAxis.axis = i;
+                    minorAxis.active = true;
+                    if(x == 0) slices[i] = 0;
+                    if(x == 1) slices[i] = fullPuzzle.size[i] - 1;
+                }
+                //Else move layer
+                else slices[i] -= Math.round((x - 0.5) * 2);
+                //If out of bounds
+                if(slices[i] >= fullPuzzle.size[i] || slices[i] < 0) {
+                    if(minorAxis.active) {
+                        slices[i] = -1 - minorAxis.direction;
+                        minorAxis.active = false;
+                    }
+                    else if(slices[i] <= 0) slices[i] = fullPuzzle.size[i] - 1;
+                    else slices[i] = 0;
+                }
                 focusedSlice = i;
                 updateScene();
                 updateSlicer();
             }
-            layer.prepend(button);
+            layer.appendChild(button);
         }
         for(let x = 0; x < 3; x++) {
             let button = document.createElement("button");
@@ -273,6 +293,9 @@ window.generateSlicer = function () {
             button.classList.add("slicer_button_dim_" + x);
             button.id = "slicer_button_" + i + "_" + (-1 - x);
             button.onclick = function () {
+                if(minorAxis.active && minorAxis.direction == i) {
+                    minorAxis.active = false;
+                }
                 slices[slices.indexOf(-1 - x)] = 0;
                 slices[i] = -1 - x;
                 focusedSlice = i;
@@ -281,9 +304,6 @@ window.generateSlicer = function () {
             }
             layer.appendChild(button);
         }
-    }
-    for(let i = fullPuzzle.dimension; i < layers.length; i++) {
-        layers[i].style.display = "none";
-
+        slicer.appendChild(layer);
     }
 }

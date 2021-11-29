@@ -85,8 +85,8 @@ window.addEventListener("touchmove", window.onmousemove);
 const keyboardCommands = [
     {key: "p", func: pastePuzzle, type: "sandbox"},
     {key: "y", func: copyPuzzle, type: "sandbox"},
-    {key: "d", func: function () {if(slices[focusedSlice] != -3) {slices[focusedSlice]--; updateScene(); updateSlicer();} }},
-    {key: "a", func: function () {if(slices[focusedSlice] != fullPuzzle.size[focusedSlice] - 1) {slices[focusedSlice]++; updateScene(); updateSlicer();} }},
+    {key: "d", func: function () {fromId("slicer_button_"+focusedSlice+"_minus").click();}},
+    {key: "a", func: function () {fromId("slicer_button_"+focusedSlice+"_plus").click();}},
     {key: "w", func: _ => {if(focusedSlice != 0) {focusedSlice--; updateSlicer();} }},
     {key: "s", func: _ => {if(focusedSlice != fullPuzzle.dimension - 1) {focusedSlice++; updateSlicer();} }},
     {key: "escape", func: _ => {hide("popup_box"); hide("popup_background");}},
@@ -103,21 +103,13 @@ onkeydown = function (e) {
     //Digits - slicer specific layer
     if("1234567890".includes(key)) {
         let digit = key.charCodeAt(0) - "1".charCodeAt(0);
-        if(digit == -1) digit = 9;
-        if(digit < fullPuzzle.size[focusedSlice]) {
-            slices[focusedSlice] = digit;
-            updateScene();
-            updateSlicer();
-        }
+        if(digit < fullPuzzle.dimension) focusedSlice = digit;
+        updateSlicer();
     }
     //xyz
     let dim = "xyz";
     for(let i = 0; i < 3; i++) if(key == dim.charAt(i)) {
-        if(slices.indexOf(-1 - i) != -1)
-            slices[slices.indexOf(-1 - i)] = 0;
-        slices[focusedSlice] = -1 - i;
-        updateScene();
-        updateSlicer();
+        fromId("slicer_button_" + focusedSlice + "_" + (-1 - i)).click();
     }
 }
 onkeyup = function (e) {
@@ -128,6 +120,7 @@ window.onload = function () {
     resize();
     window.addEventListener("resize", resize);
     generateSlicer();
+    updateSlicer();
     updateScene();
 
     render();
