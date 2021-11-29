@@ -1,14 +1,14 @@
 import * as Pako from "../lib/pako.js";
 export class Puzzle {
     //Constructors
-    constructor(dimension = 0, size = [], name = "Basic puzzle") {
-        this.name = name;
+    constructor(dimension = 0, size = []) {
         this.dimension = dimension;
         this.size = size.slice();
         this.calculateSizes();
         this.shape = new Array(this.shapeSize);
         this.hintsTotal = new Array(this.maxFaceSize * dimension);
         this.hintsPieces = new Array(this.maxFaceSize * dimension);
+        this.metadata = {};
     }
     calculateSizes() {
         this.shapeSize = 1;
@@ -50,8 +50,8 @@ Puzzle.prototype.generateHints = function () {
     this.hintsPieces.fill(0, 0, this.hintsPieces.length);
     this.hintsTotal = new Array(this.maxFaceSize * this.dimension);
     this.hintsTotal.fill(0, 0, this.hintsTotal.length);
-    foreachHint((cell, t, p, dim, i) => {
-        let row = getRow(cell, dim);
+    this.foreachHint((cell, t, p, dim, i) => {
+        let row = this.getRow(cell, dim);
         let total = 0, pieces = 0, prev = cell_broken;
         for(let x = 0; x < row.length; x++) {
             if(row[x] == cell_colored) {
@@ -61,8 +61,8 @@ Puzzle.prototype.generateHints = function () {
             prev = row[x];
         }
         if(total == 0) pieces = 1;
-        this.hintsPieces[dim + this.maxFaceSize * i] = pieces;
-        this.hintsTotal[dim + this.maxFaceSize * i] = total;
+        this.hintsPieces[i + this.maxFaceSize * dim] = pieces;
+        this.hintsTotal[i + this.maxFaceSize * dim] = total;
     });
 }
 Puzzle.prototype.generateSidesVisible = function () {
@@ -121,7 +121,7 @@ Puzzle.prototype.rayIntersect = function (start, vel) {
     //Setup starting variables
     let normVel = vel.map(v => v / velocityMagnitude);
     let dir = vel.map(v => Math.sign(v));
-    let closestCell = start.map((v, i) => dir[i] > 0 ? 1 : 0 + (dir[i] > 0 ? -1 : 1) * ((v % 1 + 1) % 1));
+    let closestCell = start.map((v, i) => ((v < 0 ? 1 - v : v) % 1 + 1) % 1);
     let tDelta = normVel.map(v => Math.abs(1 / v));
     let tMax = tDelta.map((v, i) => closestCell[i] * v);
     //Variables that keep track of state
@@ -186,8 +186,7 @@ Puzzle.prototype.generateActionableRows = function () {
 Puzzle.prototype.toString = function () {
     const A = 'A'.charCodeAt(0);
     //Sizes and dimension
-    let out = this.name + "~"
-        + this.dimension + "~"
+    let out = this.dimension + "~"
         + this.size.map(size => String.fromCharCode(A + size)).join("") + "~"
         //Shape
         + this.shape.map(cell => cell == cell_unsure ? "-" : (cell == cell_colored ? "+" : " ")).join("") + "~";
@@ -198,6 +197,7 @@ Puzzle.prototype.toString = function () {
             out += String.fromCharCode(A + this.hintsTotal[index], A + this.hintsPieces[index]);
         }
     }
+    out += "~" + JSON.stringify(this.metadata);
     return out;
 }
 Puzzle.prototype.toBase64 = function () {
@@ -206,19 +206,16 @@ Puzzle.prototype.toBase64 = function () {
 }
 //Import functions
 Puzzle.fromString = function (str) {
-    var puz = new Puzzle();
     const A = 'A'.charCodeAt(0);
     let strs = str.split("~");
-    puz.name = strs[0];
-    puz.dimension = Number(strs[1]);
-    puz.size = strs[2].split("").map(c => c.charCodeAt(0) - A);
-    puz.calculateSizes();
-    puz.shape = new Array(puz.shapeSize);
-    for(let i = 0; i < strs[3].length; i++) {
-        let char = strs[3].charAt(i);
+    let size = strs[1].split("").map(c => c.charCodeAt(0) - A);
+    let puz = new Puzzle(Number(strs[0]), size, "");
+    for(let i = 0; i < strs[2].length; i++) {
+        let char = strs[2].charAt(i);
         if(char == '+') puz.shape[i] = cell_colored;
         else if(char == ' ') puz.shape[i] = cell_broken;
-        else puz.shape[i] = cell_unsure;
+        else if(char == '-') puz.shape[i] = cell_unsure;
+        else puz.shape[i] = cell_error;
     }
     puz.hintsTotal = new Array(puz.maxFaceSize * puz.dimension);
     puz.hintsPieces = new Array(puz.maxFaceSize * puz.dimension);
@@ -226,11 +223,12 @@ Puzzle.fromString = function (str) {
     for(let dim = 0; dim < puz.dimension; dim++) {
         for(let x = 0; x < puz.shapeSize / puz.size[dim]; x++) {
             let hintPos = dim * puz.maxFaceSize + x;
-            puz.hintsTotal[hintPos] = strs[4].charCodeAt(index) - A;
-            puz.hintsPieces[hintPos] = strs[4].charCodeAt(index + 1) - A;
+            puz.hintsTotal[hintPos] = strs[3].charCodeAt(index) - A;
+            puz.hintsPieces[hintPos] = strs[3].charCodeAt(index + 1) - A;
             index += 2;
         }
     }
+    puz.metadata = JSON.parse(strs[4] || "{}");
     return puz;
 
 }
@@ -241,6 +239,7 @@ Puzzle.fromBase64 = function (str) {
     let unzippedString = Pako.inflate(data, {to: "string"});
     return Puzzle.fromString(unzippedString);
 }
+const cell_error = 0;
 const cell_broken = 1;
 const cell_colored = 2;
 const cell_unsure = 3;

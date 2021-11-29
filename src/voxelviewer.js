@@ -5,8 +5,8 @@ const cell_colored = 2;
 const cell_unsure = 3;
 window.Puzzle = Puzzle;
 window.THREE = THREE;
-window.puzzle = new Puzzle(3, [12, 7, 5], "Doggy");
-window.fullPuzzle = Puzzle.fromString('Basic puzzle~3~MHF~+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------~AAAAAAAAAABBBBCCCCGBGBCBCBBBAAAAGBJBFCFCBBCCCCGBGBCBCBBBAAAAAAAAAABBBBAAAACBAAAAAAAAAAAAAAAAAAAACBHBCBCBCBCBEBAAAAAAAABBCBEBCBCBCBCBCBBBCCEBCBAACBHBCBCBCBCBEBAAAAAAAAAAAACBAAAAAAAAAAAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAACCAAAAAAAACCAAAAAAAAAAAADBDBDBDBDBDBAAAAAAAAAAAADBDBDBDBDBDBBBBBBBAABBDBDBAAAAAAAAAAAAAABBBBAADBFBAAAAAAAAAAAABBBBBBAAAAECAAAAAAAAAAAAAABBAA');
+window.puzzle = new Puzzle(3, [12, 7, 5]);
+window.fullPuzzle = Puzzle.fromBase64('eJwzrvP1cKvT1h0Fgx3UOcKBExA4A4G7k7uTMxA6OYFE3Z28nNyc3ZyxySH0gWhnJDEEcHbyAOsAQVcnhB4QzxkOQaaD+LjU4zYfKO6MycIn7uKEgLjEIQDkTnRVMP+6OLk5oYtCwsHVGV29o2N1LQBBAKlv');
 
 window.scene = {
     camera: null,
@@ -44,7 +44,7 @@ window.render = function () {
     if(scene.input.latestEvent.shiftKey || scene.input.latestEvent.ctrlKey) {
         let cursorPos = getCursorPosition();
         let direction = new THREE.Vector3(0, 0, 0).copy(scene.camera.position).multiplyScalar(-1).normalize();
-        let intersection = puzzle.rayIntersect(cursorPos.toArray(), direction.toArray());
+        let intersection = puzzle.rayIntersect(cursorPos, direction.toArray());
         if(intersection.pos != -1) if(scene.input.selectedBlock != intersection.pos || scene.input.selectedFace != intersection.face) {
             //scene.voxels[scene.input.selectedBlock].material = scene.materials.selected;
             scene.faceSelector.position.copy(scene.voxels[intersection.pos].position);
@@ -218,12 +218,12 @@ window.getCursorPosition = function () {
         xPixelStep[2] = -xPixelStep[2];
     }
     let yPixelStep = normalize([Math.sin(yRot), 1 / Math.tan(xRot), -Math.cos(yRot)]);
-    return yPixelStep.map((yStep, i) => {
-        return yStep * Math.sign(xRot) * inp.mouseX / inp.mouseY
-            + xPixelStep[i] * inp.mouseX / inp.boxSize
-            + scene.camera.position["xyz".charAt(i)]
-            + puzzle.size[i] / 2;
-    });
+    return yPixelStep.map((yStep, i) =>
+        yStep * (Math.sign(xRot) * inp.mouseY / inp.boxSize)
+        + xPixelStep[i] * (inp.mouseX / inp.boxSize)
+        + scene.camera.position["xyz".charAt(i)]
+        + puzzle.size[i] / 2
+    );
 }
 window.slices = [-1, -2, -3];
 window.focusedSlice = 0;
@@ -235,30 +235,43 @@ window.updateSlicer = function () {
     let layers = document.getElementsByClassName("slicer_layer");
     for(let i = 0; i < fullPuzzle.dimension; i++) {
         let buttons = layers[i].children;
-        buttons[buttons.length - slices[i] - 4].classList.add("slicer_button_focused");
+        fromId("slicer_button_" + i + "_" + slices[i]).classList.add("slicer_button_focused");
     }
     layers[focusedSlice].classList.add("focused_layer");
 }
 window.generateSlicer = function () {
+    const slicer = fromId("slicer");
+    slicer.innerHTML = "";
+    if(fullPuzzle.dimension == 2 || fullPuzzle.dimension == 1) {
+        slices = [-1, -3];
+        updateScene();
+        return;
+    }
     let layers = document.getElementsByClassName("slicer_layer");
     for(let i = 0; i < fullPuzzle.dimension; i++) {
+        let layer = document.createElement("div");
+        slicer.appendChild(layer);
+        layer.classList = "slicer_layer";
         let xyz = "xyz";
         for(let x = 0; x < fullPuzzle.size[i]; x++) {
             let button = document.createElement("button");
             button.innerText = x + 1;
             button.classList = "slicer_button";
+            button.id = "slicer_button_" + i + "_" + x;
             button.onclick = function () {
                 slices[i] = x;
                 focusedSlice = i;
                 updateScene();
                 updateSlicer();
             }
-            layers[i].prepend(button);
+            layer.prepend(button);
         }
         for(let x = 0; x < 3; x++) {
             let button = document.createElement("button");
             button.innerText = xyz.charAt(x);
             button.classList = "slicer_button";
+            button.classList.add("slicer_button_dim_" + x);
+            button.id = "slicer_button_" + i + "_" + (-1 - x);
             button.onclick = function () {
                 slices[slices.indexOf(-1 - x)] = 0;
                 slices[i] = -1 - x;
@@ -266,7 +279,7 @@ window.generateSlicer = function () {
                 updateScene();
                 updateSlicer();
             }
-            layers[i].appendChild(button);
+            layer.appendChild(button);
         }
     }
     for(let i = fullPuzzle.dimension; i < layers.length; i++) {

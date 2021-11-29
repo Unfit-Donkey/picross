@@ -1,7 +1,19 @@
+@font-face {
+    font-family:"lato";
+    src: url("../lib/lato.ttf") format("truetype");
+    font-weight:normal;
+    font-size:normal;
+
+}
+
 body {
     margin:0;
     overflow:hidden;
     background:white;
+    font-family:"lato";
+}
+* {
+
 }
 canvas {
     position:absolute;
@@ -10,6 +22,16 @@ canvas {
     pointer-events:none;
     z-index:0;
 }
+button:hover {
+    background:#88888855;
+}
+button {
+    border:none;
+}
+u {
+    text-decoration:underline;
+}
+
 #slicer {
     display:inline-block;
     position:absolute;
@@ -22,14 +44,11 @@ canvas {
 
 }
 .slicer_layer {
-    display:block;
+    display:table;
     text-align:right;
     height:1.4em;
-
-}
-.focused_layer {
-    font-weight:700;
-    height:1.8em;
+    background:#000;
+    margin:0 0 0 auto;
 }
 .slicer_button {
     background:#ffffff;
@@ -43,28 +62,28 @@ canvas {
     height:100%;
     padding:0;
     text-align:center;
+    outline:none;
 }
 .slicer_button:hover {
-    background: #dddddd;
-
-}
+    background: #dddddd; }
 .slicer_button_focused {
     font-weight:bold;
+    opacity:88%;
 }
 .focused_layer > .slicer_button_focused {
-    background:#dddddd;
+    opacity:70%;
 }
-.slicer_layer button:nth-last-child(1) {
-    background:#ccccff;
-}
-.slicer_layer button:nth-last-child(2) {
-    background:#bbeebb;
-}
-.slicer_layer button:nth-last-child(3) {
+.slicer_button_dim_0 {
     background:#ffcccc;
 }
+.slicer_button_dim_1 {
+    background:#bbeebb;
+}
+.slicer_button_dim_2 {
+    background:#ccccff;
+}
 
-#option_buttons_holder {
+.option_buttons_holder {
     position:absolute;
     display:inline-block;
     right:10px;
@@ -90,4 +109,90 @@ canvas {
 }
 .option_button:first-child {
     border-top-width:0.05em;
+}
+#popup_box {
+    background:#ca9d58;
+    width:50%;
+    max-width:100%;
+    min-width:400px;
+    height:50%;
+    max-height:100%;
+    min-height:400px;
+    position:absolute;
+    margin:auto;
+    top:0;
+    left:0;
+    right:0;
+    bottom:0;
+    border-radius:1em;
+    z-index:100;
+    padding: 20px;
+    line-height: 1.5em;
+    overflow-y:scroll;
+    scrollbar-width: thin;
+    scrollbar-color: #00000088 none;
+}
+#popup_box::-webkit-scrollbar {
+    width: 24px;
+}
+#popup_box::-webkit-scrollbar-thumb {
+    background-color: #00000088;
+    background-clip:padding-box;
+    border:8px solid #00000000;
+    border-radius: 20px;
+    margin-right:10px;
+}
+#popup_box button, #popup_box input {
+    padding:5px;
+    background:none;
+    box-shadow: inset 0 0 10px 1px rgba(50,0,0,0.5);
+    background:#00000010;
+    border-radius:10px;
+    font-size:15pt;
+    border:none;
+}
+#popup_box button:hover, #popup_box input:hover {
+    background:#00000030;
+}
+#popup_box button:focus, #popup_box input:focus {
+    outline:5px solid #000;
+}
+.popup_page {
+    display:none;
+}
+#popup_close {
+    width:5%;
+    height:5%;
+    border-radius:1em 0 1 em 0;
+    background:#88888833;
+}
+#popup_background {
+    position:absolute;
+    z-index:90;
+    background:#00000070;
+    left:0;
+    top:0;
+    width:100%;
+    height:100%;
+    backdrop-filter:blur(2px);
+    -webkit-backdrop-filter:blur(2px);
+}
+#main_menu {
+    text-align:center;
+}
+#main_menu > button {
+    display:table;
+    margin:1em auto 1em auto;
+    padding:0.5em 2em 0.5em 2em;
+}
+#axis_size_list {
+    margin:0;
+}
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield;
 }

@@ -10,7 +10,7 @@
 
 using namespace std;
 typedef enum Cell : char {
-    unsure = 3, broken = 1, painted = 2
+    unsure = 3, broken = 1, painted = 2, error = 0
 } Cell;
 typedef struct Hint {
     unsigned char total;
@@ -18,12 +18,11 @@ typedef struct Hint {
 } Hint;
 void solveRow(int total, int pieces, int rowLength, Cell* row, Cell* out);
 void printCells(Cell* cells, int count) {
-    const char* type = "0 +-EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE";
+    const char* type = "E +-EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE";
     for(int i = 0;i < count;i++) cout << type[cells[i]];
 }
 class Puzzle {
 public:
-    string name;
     int dimension;
     int* size = NULL;
     Cell* shape = NULL;
@@ -63,22 +62,21 @@ public:
                 x++;
             }
         }
-        //Set name
-        name = strs[0];
         //Dimension and size
-        dimension = atoi(strs[1].c_str());
+        dimension = atoi(strs[0].c_str());
         free(size);
         size = (int*)calloc(dimension, sizeof(int));
-        for(int i = 0;i < dimension;i++) size[i] = strs[2][i] - 'A';
+        for(int i = 0;i < dimension;i++) size[i] = strs[1][i] - 'A';
         computeShapeSize();
         //Copy shape
         free(shape);
-        shape = (Cell*)calloc(strs[3].size(), sizeof(Cell));
-        memset(shape, 3, strs[3].size());
-        for(int i = 0;i < strs[3].size();i++) {
+        shape = (Cell*)calloc(strs[2].size(), sizeof(Cell));
+        memset(shape, 3, strs[2].size());
+        for(int i = 0;i < strs[2].size();i++) {
             if(strs[3][i] == ' ') shape[i] = broken;
             else if(strs[3][i] == '-') shape[i] = unsure;
             else if(strs[3][i] == '+') shape[i] = painted;
+            else shape[i] = error;
         }
         //Copy hints
         free(hints);
@@ -87,18 +85,17 @@ public:
         for(int dim = 0; dim < dimension; dim++) {
             for(int x = 0; x < shapeSize / size[dim]; x++) {
                 int hintPos = dim * maxFaceSize + x;
-                hints[hintPos].total = strs[4][index] - 'A';
-                hints[hintPos].pieceCount = strs[4][index + 1] - 'A';
+                hints[hintPos].total = strs[3][index] - 'A';
+                hints[hintPos].pieceCount = strs[3][index + 1] - 'A';
                 index += 2;
             }
         }
     }
-    Puzzle(int dim, int* siz, string nam) {
+    Puzzle(int dim, int* siz) {
         dimension = dim;
         free(size);
         size = (int*)calloc(dim, sizeof(int));
         memcpy(size, siz, dim * sizeof(int));
-        name = nam;
         computeShapeSize();
         free(shape);
         shape = (Cell*)calloc(shapeSize, sizeof(Cell));
@@ -175,8 +172,8 @@ public:
         }
     }
     string toString() {
-        // NAME~DIMENSION~SIZE~SHAPE~HINTS
-        string out = name + "~" + std::to_string(dimension) + "~";
+        // DIMENSION~SIZE~SHAPE~HINTS
+        string out = std::to_string(dimension) + "~";
         for(int i = 0;i < dimension;i++) {
             out += string(1, 'A' + size[i]);
         }
@@ -186,6 +183,7 @@ public:
             if(shape[i] == broken) out += " ";
             else if(shape[i] == unsure) out += "-";
             else if(shape[i] == painted) out += "+";
+            else out += "E";
         }
         //Hints
         out += "~";

@@ -1,3 +1,39 @@
+let gameMode = "mainMenu";
+function showOne(list, id) {
+    let els = document.getElementsByClassName(list);
+    for(let i = 0; i < els.length; i++) els[i].style.display = "none";
+    fromId(id).style.display = "block";
+}
+function show(id) {
+    fromId(id).style.display = "block";
+}
+function hideAll(classId) {
+    let list = Array.from(document.getElementsByClassName(classId));
+    for(let i in list) list[i].style.display = "none";
+}
+function showAll(classId) {
+    let list = Array.from(document.getElementsByClassName(classId));
+    for(let i in list) list[i].style.display = "block";
+}
+function hide(id) {
+    fromId(id).style.display = "none";
+}
+function fromId(i) {
+    return document.getElementById(i);
+}
+function convertColor(n) {
+    let el = document.getElementById("clipboard");
+    el.style.background = n;
+    return window.getComputedStyle(el).backgroundColor;
+}
+function openGameMode(type) {
+    gameMode = type;
+    let types = ["sandbox", "player", "creator", "solver"];
+    let firstPage = ["puzzle_creator_popup", "puzzle_data_enteror", "puzzle_creator_popup", "puzzle_creator_popup"];
+    for(let i in types) hideAll(types[i]);
+    showAll(type);
+    showPopup(firstPage[types.indexOf(type)]);
+}
 function resize() {
     //Compute camera variables
     let frustumSize = 10;
@@ -46,23 +82,24 @@ window.onmousemove = function (e) {
     }
 }
 window.addEventListener("touchmove", window.onmousemove);
+const keyboardCommands = [
+    {key: "p", func: pastePuzzle, type: "sandbox"},
+    {key: "y", func: copyPuzzle, type: "sandbox"},
+    {key: "d", func: function () {if(slices[focusedSlice] != -3) {slices[focusedSlice]--; updateScene(); updateSlicer();} }},
+    {key: "a", func: function () {if(slices[focusedSlice] != fullPuzzle.size[focusedSlice] - 1) {slices[focusedSlice]++; updateScene(); updateSlicer();} }},
+    {key: "w", func: _ => {if(focusedSlice != 0) {focusedSlice--; updateSlicer();} }},
+    {key: "s", func: _ => {if(focusedSlice != fullPuzzle.dimension - 1) {focusedSlice++; updateSlicer();} }},
+    {key: "escape", func: _ => {hide("popup_box"); hide("popup_background");}},
+    {key: "e", func: _ => {showPopup("main_menu");}},
+];
 onkeydown = function (e) {
     scene.input.latestEvent = e;
     scene.input.pmouseX = scene.input.mouseX;
     scene.input.pmouseY = scene.input.mouseY;
     let key = e.key.toLowerCase();
-    if(key == "d") // Slider left
-        if(slices[focusedSlice] != -3) {slices[focusedSlice]--; updateScene(); updateSlicer();}
-    if(key == "a") //Slider right
-        if(slices[focusedSlice] != fullPuzzle.size[focusedSlice] - 1) {
-            slices[focusedSlice]++;
-            updateScene();
-            updateSlicer();
-        }
-    if(key == "w") //Slider focus up
-        if(focusedSlice != 0) {focusedSlice--; updateSlicer();}
-    if(key == "s") //Slider focus down
-        if(focusedSlice != fullPuzzle.dimension - 1) {focusedSlice++; updateSlicer();}
+    for(let i = 0; i < keyboardCommands.length; i++) {
+        if(key == keyboardCommands[i].key) keyboardCommands[i].func();
+    }
     //Digits - slicer specific layer
     if("1234567890".includes(key)) {
         let digit = key.charCodeAt(0) - "1".charCodeAt(0);
@@ -86,7 +123,7 @@ onkeydown = function (e) {
 onkeyup = function (e) {
     scene.input.latestEvent = e;
 }
-document.body.onload = function () {
+window.onload = function () {
     createSceneBasics();
     resize();
     window.addEventListener("resize", resize);
@@ -94,4 +131,34 @@ document.body.onload = function () {
     updateScene();
 
     render();
+}
+function solveCurrentPuzzle() {
+    Module.setPuzzle(fullPuzzle.toString());
+    Module.solve();
+    fullPuzzle = Puzzle.fromString(Module.getPuzzle());
+    updateScene();
+}
+function copyPuzzle() {
+    let clipboard = document.getElementById("clipboard");
+    clipboard.innerText = fullPuzzle.toBase64();
+    navigator.clipboard.writeText(fullPuzzle.toBase64());
+}
+function pastePuzzle() {
+    let str = navigator.clipboard.readText().then(str => {
+        try {
+            fullPuzzle = Puzzle.fromBase64(str);
+            updateScene();
+        }
+        catch(e) {
+            console.log(e);
+            alert("Invalid puzzle format");
+
+        }
+    });
+}
+function newPuzzle() {
+    showOne("popup_page", "puzzle_creator_popup");
+    show("popup_box");
+    show("popup_background");
+    updateAxisSizeList(3);
 }
