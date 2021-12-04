@@ -21,6 +21,9 @@ function hide(id) {
 function fromId(i) {
     return document.getElementById(i);
 }
+function fromClass(i) {
+    return document.getElementsByClassName(i);
+}
 function convertColor(n) {
     let el = document.getElementById("clipboard");
     el.style.background = n;
@@ -47,10 +50,6 @@ function resize() {
     scene.camera.bottom = -frustumSize / aspect;
     scene.camera.updateMatrixWorld();
     scene.camera.updateProjectionMatrix();
-    //Update cardinal directions
-    for(let i = 0; i < 3; i++) {
-        scene.cardinal[i].position.set(scene.camera.left + 1, scene.camera.bottom + 1, 0);
-    }
     scene.renderer.setSize(window.innerWidth, window.innerHeight, true);
 }
 window.addEventListener("touchstart", e => {
@@ -85,10 +84,10 @@ window.addEventListener("touchmove", window.onmousemove);
 const keyboardCommands = [
     {key: "p", func: pastePuzzle, type: "sandbox"},
     {key: "y", func: copyPuzzle, type: "sandbox"},
-    {key: "d", func: function () {fromId("slicer_button_"+focusedSlice+"_minus").click();}},
-    {key: "a", func: function () {fromId("slicer_button_"+focusedSlice+"_plus").click();}},
-    {key: "w", func: _ => {if(focusedSlice != 0) {focusedSlice--; updateSlicer();} }},
-    {key: "s", func: _ => {if(focusedSlice != fullPuzzle.dimension - 1) {focusedSlice++; updateSlicer();} }},
+    {key: "d", func: _ => slicer.update(slicer.focusedSlice, null, "dec")},
+    {key: "a", func: _ => slicer.update(slicer.focusedSlice, null, "inc")},
+    {key: "w", func: _ => slicer.update(slicer.focusedSlice - 1)},
+    {key: "s", func: _ => slicer.update(slicer.focusedSlice + 1)},
     {key: "escape", func: _ => {hide("popup_box"); hide("popup_background");}},
     {key: "e", func: _ => {showPopup("main_menu");}},
 ];
@@ -103,13 +102,12 @@ onkeydown = function (e) {
     //Digits - slicer specific layer
     if("1234567890".includes(key)) {
         let digit = key.charCodeAt(0) - "1".charCodeAt(0);
-        if(digit < fullPuzzle.dimension) focusedSlice = digit;
-        updateSlicer();
+        if(digit < fullPuzzle.dimension) slicer.updateDisplay(digit);
     }
     //xyz
     let dim = "xyz";
     for(let i = 0; i < 3; i++) if(key == dim.charAt(i)) {
-        fromId("slicer_button_" + focusedSlice + "_" + (-1 - i)).click();
+        slicer.update(slicer.focusedSlice, -1 - i, "set");
     }
 }
 onkeyup = function (e) {
@@ -119,17 +117,15 @@ window.onload = function () {
     createSceneBasics();
     resize();
     window.addEventListener("resize", resize);
-    generateSlicer();
-    updateSlicer();
-    updateScene();
-
+    window.slicer = new Slicer(fullPuzzle);
+    recreateScene();
     render();
 }
 function solveCurrentPuzzle() {
     Module.setPuzzle(fullPuzzle.toString());
     Module.solve();
     fullPuzzle = Puzzle.fromString(Module.getPuzzle());
-    updateScene();
+    recreateScene();
 }
 function copyPuzzle() {
     let clipboard = document.getElementById("clipboard");
@@ -140,7 +136,7 @@ function pastePuzzle() {
     let str = navigator.clipboard.readText().then(str => {
         try {
             fullPuzzle = Puzzle.fromBase64(str);
-            updateScene();
+            recreateScene();
         }
         catch(e) {
             console.log(e);

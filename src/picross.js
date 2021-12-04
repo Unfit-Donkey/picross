@@ -1,4 +1,5 @@
 import * as Pako from "../lib/pako.js";
+window.Pako = Pako;
 export class Puzzle {
     //Constructors
     constructor(dimension = 0, size = []) {
@@ -132,7 +133,7 @@ Puzzle.prototype.rayIntersect = function (start, vel) {
     for(let count = 0; count < 100; count++) {
         //Check if intersects cube
         if(curCell.every(v => v >= 0) && curCell.every((v, i) => v < this.size[i])) {
-            if(this.shape[pos] != cell_broken) return {pos: pos, face: (recentFace * 2) + (dir[recentFace] < 0 ? 1 : 0)};
+            if(scene.voxels[pos].visible) return {pos: pos, face: (recentFace * 2) + (dir[recentFace] < 0 ? 1 : 0)};
         }
         //Advance along closest plane to tip of ray
         let closest = Math.min(tMax[0], tMax[1], tMax[2]);
@@ -198,6 +199,47 @@ Puzzle.prototype.toString = function () {
         }
     }
     out += "~" + JSON.stringify(this.metadata);
+    return out;
+}
+Puzzle.prototype.toUintArray = function () {
+    let meta = JSON.stringify(this.metadata);
+    let length = 16;
+    let hintLength = this.size.reduce((p, v) => p + this.shapeSize / v, 0);
+    let sizes = [this.dimension + 1, hintLength, Math.ceil(this.shapeSize / 4), meta.length];
+    console.log(sizes);
+    for(let i = 0; i < 4; i++) length += sizes[i];
+    let out = new Uint8ClampedArray(length);
+    for(let i = 0; i < 4; i++) {
+        let size = sizes[i];
+        for(let x = 3; x >= 0; x--) {
+            out[i * 4 + x] = size % 256;
+            size = Math.floor(size / 256);
+        }
+    }
+    let pos = 17;
+    out[16] = this.dimension;
+    for(let i = 0; i < this.dimension; i++) {
+        out[pos++] = this.size[i];
+    }
+    console.log(pos);
+    for(let i = 0; i < this.dimension; i++) {
+        for(let x = 0; x < this.shapeSize / this.size[i]; x++) {
+            let index = i * this.maxFaceSize + x;
+            out[pos++] = this.hintsTotal[index] << 3 + this.hintsPieces[index];
+        }
+    }
+    console.log(pos);
+    pos--;
+    for(let i = 0; i < this.shapeSize; i++) {
+        if(i % 4 == 0) pos++;
+        out[pos] |= this.shape[i] << (2 * i);
+    }
+    console.log(pos);
+    pos++;
+    for(let i = 0; i < meta.length; i++) {
+        out[pos++] = meta.charCodeAt(i);
+    }
+    console.log(pos);
     return out;
 }
 Puzzle.prototype.toBase64 = function () {

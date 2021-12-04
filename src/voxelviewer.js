@@ -37,6 +37,7 @@ window.scene = {
         pmouseY: 0,
         selectedBlock: -1,
         latestEvent: {},
+        doRender: true
     }
 };
 
@@ -52,14 +53,18 @@ window.render = function () {
             let rot = new THREE.Euler(0, 0, 0);
             rot["yyxxzz".charAt(intersection.face)] = Math.PI / 2;
             scene.faceSelector.setRotationFromEuler(rot);
+            scene.input.doRender = true;
         }
         scene.input.selectedBlock = intersection.pos;
         scene.input.selectedFace = intersection.face;
     }
     else scene.input.selectedBlock = -1;
     requestAnimationFrame(render);
-    scene.renderer.clear();
-    scene.renderer.render(scene.obj, scene.camera);
+    if(scene.input.doRender) {
+        scene.renderer.clear();
+        scene.renderer.render(scene.obj, scene.camera);
+        scene.input.doRender = false;
+    }
 }
 window.destroyObjects = function (object, scene) {
     if(typeof object != "object") return;
@@ -83,23 +88,12 @@ window.createSceneBasics = function () {
     scene.light = new THREE.PointLight(0xfff8ee, 1, 0, 1);
     scene.camera.add(scene.light);
     scene.light.position.set(0, 10, -30);
-    //Cardinal indicator
-    const cardinalColors = [0xFF0000, 0x00FF00, 0x0000FF];
-    const directions = ['x', 'y', 'z'];
-    for(let i = 0; i < 3; i++) {
-        let endPosition = new THREE.Vector3();
-        endPosition[directions[i]] = 1;
-        scene.cardinal[i] = new THREE.Line(
-            new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), endPosition]),
-            new THREE.LineBasicMaterial({color: cardinalColors[i]})
-        );
-        scene.camera.add(scene.cardinal[i]);
-    }
     //Debug objects
     scene.faceSelector = new THREE.Mesh(new THREE.PlaneGeometry(1, 1, 1, 1), new THREE.MeshStandardMaterial({color: 0x0000FF, side: THREE.DoubleSide}));
     scene.obj.add(scene.faceSelector);
     //scene.debug.cursorIndicator=new THREE.Mesh(geometry,scene.materials.painted);
     //scene.obj.add(scene.debug.cursorIndicator);
+    scene.input.doRender = true;
 }
 window.updateVoxels = function () {
     destroyObjects(scene.voxels, scene.obj);
@@ -116,14 +110,17 @@ window.updateVoxels = function () {
         scene.obj.add(scene.voxels[position]);
     }
 }
-window.updateScene = function (reset = false) {
+window.recreateScene = function (reset = false) {
     if(reset) {
-        slices = [-1, -2, -3];
-        for(let i = 3; i < fullPuzzle.dimension; i++) slices.push(0);
+        slicer.slices = [-1, -2, -3];
+        slicer.minorAxis = -1;
+        for(let i = 3; i < fullPuzzle.dimension; i++) slicer.slices.push(0);
     }
-    puzzle.sliceFrom(slices, fullPuzzle);
+    let renderedSlices = slicer.slices.slice();
+    renderedSlices[slicer.minorAxis] = -1 - slicer.minorDirection;
+    puzzle.sliceFrom(renderedSlices, fullPuzzle);
     updateVoxels();
-    updateRotation(true);
+    updateScene();
 }
 function voxelMesh(x, y, z, position) {
     let cell = puzzle.shape[position];
@@ -180,7 +177,7 @@ window.getTextTexture = function (num) {
     texture.anisotropy = 16;
     return texture;
 }
-window.updateRotation = function (forceSceneRegeneration) {
+window.updateRotation = function () {
     let oldVisibleSideMap = (scene.camera.position.x > 0 ? 2 : 1) + (scene.camera.position.y > 0 ? 2 : 1) * 4 + (scene.camera.position.z > 0 ? 2 : 1) * 16;
     const mouseSpeed = 0.006;
     let inp = scene.input;
@@ -193,14 +190,25 @@ window.updateRotation = function (forceSceneRegeneration) {
     scene.camera.position.multiplyScalar(50);
     scene.camera.lookAt(0, 0, 0);
     scene.camera.updateProjectionMatrix();
-    for(let i = 0; i < 3; i++) {
-        scene.cardinal[i].setRotationFromEuler(new THREE.Euler(inp.xRot, inp.yRot, 0));
-    }
     let visibleSideMap = (scene.camera.position.x > 0 ? 2 : 1) + (scene.camera.position.y > 0 ? 2 : 1) * 4 + (scene.camera.position.z > 0 ? 2 : 1) * 16;
-    if(oldVisibleSideMap != visibleSideMap || forceSceneRegeneration) for(let i = 0; i < puzzle.shapeSize; i++) {
-        let isVisible = (puzzle.visibleSides[i] & visibleSideMap) == 0 ? false : true;
-        scene.voxels[i].visible = isVisible;
-    }
+    if(oldVisibleSideMap != visibleSideMap) updateScene();
+    scene.input.doRender = true;
+}
+window.updateScene = function () {
+    let visibleSideMap = (scene.camera.position.x > 0 ? 2 : 1) + (scene.camera.position.y > 0 ? 2 : 1) * 4 + (scene.camera.position.z > 0 ? 2 : 1) * 16;
+    puzzle.foreachCell((cell, i, pos) => {
+        let isVisible = (puzzle.visibleSides[i] & visibleSideMap);
+        if(slicer.minorAxis != -1) {
+            //Hide if in front of selected slice
+            if((pos[slicer.minorDirection] > slicer.slices[slicer.minorAxis] ? 1 : 0) ^ (scene.camera.position["xyz".charAt(slicer.minorDirection)] > 0 ? 0 : 1)) isVisible = 0;
+            //Show if is in selected slice
+            if(pos[slicer.minorDirection] == slicer.slices[slicer.minorAxis]) {
+                if(puzzle.shape[i] != cell_broken) isVisible = 1;
+            }
+        }
+        scene.voxels[i].visible = !!isVisible;
+    });
+    scene.input.doRender=true;
 }
 //Returns the position of the cursor in 3d space
 window.getCursorPosition = function () {
@@ -225,85 +233,131 @@ window.getCursorPosition = function () {
         + puzzle.size[i] / 2
     );
 }
-window.slices = [-1, -2, -3];
-window.focusedSlice = 0;
-window.minorAxis = {active: false, axis: -1, direction: -1};
-window.updateSlicer = function () {
-    let focusedButtons = document.getElementsByClassName("slicer_button_focused");
-    for(let i = focusedButtons.length - 1; i >= 0; i--) focusedButtons[i].classList.remove("slicer_button_focused");
-    let focusedLayer = document.getElementsByClassName("focused_layer");
-    if(focusedLayer.length != 0) focusedLayer[0].classList.remove("focused_layer");
-    let layers = document.getElementsByClassName("slicer_layer");
-    for(let i = 0; i < fullPuzzle.dimension; i++) {
-        if(slices[i] < 0) layers[i].children[0].innerText = "xyz".charAt(-1 - slices[i]);
-        else layers[i].children[0].innerText = slices[i] + 1;
-    }
-    layers[focusedSlice].classList.add("focused_layer");
-}
-window.generateSlicer = function () {
-    const slicer = fromId("slicer");
-    slicer.innerHTML = "";
-    if(fullPuzzle.dimension == 2 || fullPuzzle.dimension == 1) {
-        slices = [-1, -3];
-        updateScene();
-        return;
-    }
-    for(let i = 0; i < fullPuzzle.dimension; i++) {
-        let layer = document.createElement("div");
-        layer.id = "slicer_layer_" + i;
-        layer.appendChild(document.createElement("span"));
-        layer.children[0].classList.add("slicer_display");
-        layer.classList = "slicer_layer";
-        let xyz = "xyz";
-        for(let x = 0; x < 2; x++) {
-            let button = document.createElement("button");
-            button.innerText = "+-".charAt(x);
-            button.classList = "slicer_button";
-            button.id = "slicer_button_" + i + "_" + ["plus", "minus"][x];
-            button.onclick = function () {
-                //Create minor axis
-                if(slices[i] < 0) {
-                    minorAxis.direction = - 1 - slices[i];
-                    minorAxis.axis = i;
-                    minorAxis.active = true;
-                    if(x == 0) slices[i] = 0;
-                    if(x == 1) slices[i] = fullPuzzle.size[i] - 1;
-                }
-                //Else move layer
-                else slices[i] -= Math.round((x - 0.5) * 2);
-                //If out of bounds
-                if(slices[i] >= fullPuzzle.size[i] || slices[i] < 0) {
-                    if(minorAxis.active) {
-                        slices[i] = -1 - minorAxis.direction;
-                        minorAxis.active = false;
-                    }
-                    else if(slices[i] <= 0) slices[i] = fullPuzzle.size[i] - 1;
-                    else slices[i] = 0;
-                }
-                focusedSlice = i;
-                updateScene();
-                updateSlicer();
-            }
-            layer.appendChild(button);
+window.slicer = null;
+class Slicer {
+    constructor(puzzle) {
+        this.slices = new Array(fullPuzzle.dimension);
+        this.element = fromId("slicer");
+        this.element.innerHTML = "";
+        this.minorAxis = -1;
+        this.minorDirection = -1;
+        this.maxes = puzzle.size.slice();
+        this.dimension = puzzle.dimension;
+        if(puzzle.dimension == 2 || puzzle.dimension == 1) {
+            this.slices = [-1, -3];
+            this.updateDisplay(1);
+            this.updateDisplay(0);
+            recreateScene();
+            return;
         }
-        for(let x = 0; x < 3; x++) {
-            let button = document.createElement("button");
-            button.innerText = xyz.charAt(x);
-            button.classList = "slicer_button";
-            button.classList.add("slicer_button_dim_" + x);
-            button.id = "slicer_button_" + i + "_" + (-1 - x);
-            button.onclick = function () {
-                if(minorAxis.active && minorAxis.direction == i) {
-                    minorAxis.active = false;
-                }
-                slices[slices.indexOf(-1 - x)] = 0;
-                slices[i] = -1 - x;
-                focusedSlice = i;
-                updateScene();
-                updateSlicer();
+        //Generate buttons
+        for(let i = 0; i < puzzle.dimension; i++) {
+            if(i < 3) this.slices[i] = -1 - i;
+            else this.slices[i] = 0;
+            let layer = document.createElement("div");
+            layer.id = "slicer_layer_" + i;
+            layer.appendChild(document.createElement("span"));
+            layer.children[0].classList.add("slicer_display");
+            layer.classList = "slicer_layer";
+            //+ - buttons
+            for(let x = 0; x < 2; x++) {
+                let html = `
+                <button
+                    class="slicer_button"
+                    id="slicer_button_${i}_${["plus", "minus"][x]}"
+                    onclick="slicer.update(${i},null,'${["inc", "dec"][x]}')">
+                    ${"+-".charAt(x)}
+                </button>`;
+                layer.innerHTML += html;
             }
-            layer.appendChild(button);
+            //XYZ buttons
+            for(let x = 0; x < 3; x++) {
+                let html = `
+                <button
+                    class="slicer_button slicer_button_dim_${x}"
+                    id="slicer_button_${i}_${-1 - x}"
+                    onclick="slicer.update(${i},${-1 - x},'set')">
+                    ${"xyz".charAt(x)}
+                </button>`;
+                layer.innerHTML += html;
+            }
+            this.element.appendChild(layer);
         }
-        slicer.appendChild(layer);
+        //Update display
+        for(let i = 0; i < puzzle.dimension; i++) {
+            this.updateDisplay(i);
+        }
+        //Set focused layer to first
+        this.updateDisplay(0);
+    }
+};
+Slicer.prototype.update = function (index, newValue, setType, allowMinor) {
+    if(index < 0 || index >= this.dimension) index = (index + this.dimension * 10) % this.dimension;
+    let slices = this.slices;
+    let forceRecreateScene = false;
+    if(setType == "inc" || setType == "dec") {
+        //Create minor axis
+        if(this.slices[index] < 0 && !allowMinor) {
+            if(this.minorAxis != -1 && this.minorAxis != index) {
+                forceRecreateScene = true;
+            }
+            this.minorDirection = - 1 - this.slices[index];
+            this.minorAxis = index;
+            if(setType == "inc") slices[index] = -1;
+            if(setType == "dec") slices[index] = this.maxes[index];
+        }
+        if(setType == "inc") slices[index]++;
+        else slices[index]--;
+        //If out of bounds
+        if(slices[index] >= fullPuzzle.size[index] || slices[index] < 0) {
+            //Set to axis if minor axis
+            if(this.minorAxis == index) {
+                slices[index] = -1 - this.minorDirection;
+                this.minorAxis = -1;
+            }
+            //Or wrap if not
+            else if(setType == "inc") slices[index] = 0;
+            else slices[index] = this.maxes[index] - 1;
+        }
+        //Don't update whole scene if change is along minor axis
+        if(this.minorAxis != index) forceRecreateScene = true;
+    }
+    else if(setType == "set") {
+        //Create minor axis if applicable
+        if(slices[index] < 0 && newValue >= 0 && !allowMinor) {
+            this.minorDirection = - 1 - slices[index];
+            this.minorAxis = index;
+            slices[index] = newValue;
+        }
+        else {
+            //Delete minor axis if conflicts with new value
+            if(this.minorDirection == -1 - newValue) {
+                this.minorAxis = -1;
+            }
+            //Set old axis to layer1 if conflicts
+            if(newValue < 0) {
+                let location = slices.indexOf(newValue);
+                slices[location] = 0;
+                if(location != -1) this.updateDisplay(location);
+            }
+            //Set new value and update Scene
+            slices[index] = newValue;
+            if(this.minorAxis != index || newValue < 0) forceRecreateScene = true;
+        }
+    }
+    this.updateDisplay(index);
+    if(forceRecreateScene) recreateScene();
+    updateScene();
+}
+Slicer.prototype.updateDisplay = function (layer) {
+    //Update display
+    if(this.slices[layer] < 0) fromClass("slicer_display")[layer].innerText = "xyz".charAt(-1 - this.slices[layer]);
+    else fromClass("slicer_display")[layer].innerText = this.slices[layer] + 1;
+    //Update focused Layer
+    if(this.focusedSlice != layer) {
+        this.focusedSlice = layer;
+        if(fromClass("focused_layer").length != 0) fromClass("focused_layer")[0].classList.remove("focused_layer");
+        fromClass("slicer_layer")[layer].classList.add("focused_layer");
     }
 }
+window.Slicer = Slicer;
