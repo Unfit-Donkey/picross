@@ -73,9 +73,9 @@ public:
         shape = (Cell*)calloc(strs[2].size(), sizeof(Cell));
         memset(shape, 3, strs[2].size());
         for(int i = 0;i < strs[2].size();i++) {
-            if(strs[3][i] == ' ') shape[i] = broken;
-            else if(strs[3][i] == '-') shape[i] = unsure;
-            else if(strs[3][i] == '+') shape[i] = painted;
+            if(strs[2][i] == ' ') shape[i] = broken;
+            else if(strs[2][i] == '-') shape[i] = unsure;
+            else if(strs[2][i] == '+') shape[i] = painted;
             else shape[i] = error;
         }
         //Copy hints
