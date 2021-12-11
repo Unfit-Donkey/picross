@@ -53,9 +53,43 @@ function resize() {
     scene.renderer.setSize(window.innerWidth, window.innerHeight, true);
 }
 window.addEventListener("touchstart", e => {
-    console.log(e.touches[0]);
     scene.input.mouseX = e.touches[0].clientX - window.innerWidth / 2;
     scene.input.mouseY = -e.touches[0].clientY + window.innerHeight / 2;
+    onclick();
+});
+let slicerGuide = {
+    active: false,
+    cursorStart: [],
+    cursorUnit: [],
+    offset: 0,
+    selected: 0,
+};
+function onclick() {
+    let caster = new THREE.Raycaster();
+    caster.setFromCamera(new THREE.Vector2(scene.input.mouseX / window.innerWidth * 2, scene.input.mouseY / window.innerHeight * 2), scene.camera);
+    let intersects = caster.intersectObjects(scene.sliceGuides, false);
+    if(intersects.length != 0) {
+        let uuid = intersects[0].object.uuid;
+        for(let i = 0; i < 3; i++) if(scene.sliceGuides[i].uuid == uuid) slicer.minorDirection = i;
+        if(slicer.minorAxis == -1) slicer.minorAxis = slicer.slices.indexOf(-1 - slicer.minorDirection);
+        slicerGuide.active = true;
+        slicerGuide.cursorStart = [scene.input.mouseX, scene.input.mouseY];
+        slicerGuide.offset = Math.max(slicer.slices[slicer.minorAxis], -1);
+        let yTheta = scene.input.yRot, xTheta = scene.input.xRot;
+        if(slicer.minorDirection == 0) slicerGuide.cursorUnit = [Math.cos(yTheta), Math.sin(yTheta) * Math.sin(xTheta)];
+        if(slicer.minorDirection == 1) slicerGuide.cursorUnit = [0, Math.cos(xTheta)];
+        if(slicer.minorDirection == 2) slicerGuide.cursorUnit = [Math.sin(yTheta), -Math.cos(yTheta) * Math.sin(xTheta)];
+        slicerGuide.cursorUnit[0] *= scene.input.boxSize;
+        slicerGuide.cursorUnit[1] *= scene.input.boxSize;
+    }
+}
+window.addEventListener("mousedown", e => {
+    scene.input.mouseX = e.clientX - window.innerWidth / 2;
+    scene.input.mouseY = - e.clientY + window.innerHeight / 2;
+    onclick();
+});
+window.addEventListener("mouseup", e => {
+    slicerGuide.active = false;
 });
 window.onmousemove = function (e) {
     e.preventDefault();
@@ -70,6 +104,39 @@ window.onmousemove = function (e) {
         scene.input.mouseY = -e.clientY + window.innerHeight / 2;
     }
     scene.input.latestEvent = e;
+    if(slicerGuide.active) {
+        if(slicer.minorAxis == -1) return slicerGuide.active = false;
+        let dim = slicer.minorDirection;
+        let mouseDelta = [scene.input.mouseX - slicerGuide.cursorStart[0], scene.input.mouseY - slicerGuide.cursorStart[1]];
+        let x = slicerGuide.cursorUnit[0], y = slicerGuide.cursorUnit[1];
+        let unitLength = Math.sqrt(x ** 2 + y ** 2);
+        let unitAngle = Math.atan(y / x);
+        if(x < 0) unitAngle += Math.PI;
+        console.log(unitAngle);
+        let distance = mouseDelta[0] * Math.cos(unitAngle) + mouseDelta[1] * Math.sin(unitAngle);
+        distance /= unitLength;
+        //Calculate selected layer
+        let cameraFacing = scene.camera.position["xyz".charAt(dim)] > 0;
+        if(slicerGuide.offset == -1) {
+            if(cameraFacing) distance = puzzle.size[dim] - 1 + distance;
+        }
+        else distance += slicerGuide.offset;
+        slicerGuide.selected = Math.min(Math.max(Math.round(distance), 0), puzzle.size[dim] - 1);
+        //Reset if pulled back
+        if(distance < -0.5 && !cameraFacing) {
+            slicerGuide.selected = 0;
+            slicer.update(slicer.minorAxis, -1 - slicer.minorDirection, "set");
+        }
+        else if(distance >= puzzle.size[dim] && cameraFacing) {
+            slicerGuide.selected = puzzle.size[dim] - 1;
+            slicer.update(slicer.minorAxis, -1 - slicer.minorDirection, "set");
+        }
+        //Ignore if no change
+        else if(slicer.slices[slicer.minorAxis] == slicerGuide.selected);
+        //Edit position
+        else slicer.update(slicer.minorAxis, slicerGuide.selected, "set");
+        return;
+    }
     if(e.buttons & 1 == 1 || e.type == "touchmove") {
         if(e.ctrlKey) {
 

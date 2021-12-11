@@ -164,6 +164,108 @@
             <button onclick="copyPuzzle()">Copy puzzle</button>
         </div>
         <div class="popup_page" id="guide_popup">
+            <h2>Concept</h2>
+            Each puzzle is composed of a grid of blocks that are split up into rows. Some rows have hints that indicate
+            information about the colored blocks in the row.
+
+            The goal of the game is to start with a complete cube of blocks and carve it down to the hidden shape.
+
+            <h2>Hints</h2>
+            The hint is the symbol on the side of the cube. The number represents the total number of cubes that should
+            be in the final shape. If there is no border around the cube, they are consecutive. A circle around the
+            number indicates that there is a single gap. A square around the number indicates that there are two gaps in
+            the array. If there is a number in the top right corner of the square, that indicates the total number of
+            gaps.
+            <h2>Vocabulary</h2>
+            <ul>
+                <li>Row - Row or a column of cells</li>
+                <li>Hint - Symbol at the end of a row</li>
+                <li>Colored - A cube that is part of the shape</li>
+                <li>Broken - A cube that is not part of the shape</li>
+                <li>Undetermined - Unknown if colored or broken, all cubes start this way</li>
+                <li>Possibility - Possible situation for a row</li>
+                <li>Guaranteed - A cell that is the same in all possibilities.</li>
+                <li>Gap - Run of broken cells between colored or undetermined cells</li>
+            </ul>
+            <h2>Example guide</h2>
+            In each table, the red squares represent colored blocks, empty squares represent broken blocks, and white
+            squares represent unaltered blocks.
+            <h2>Example 1</h2>
+            Given this hint in a 7 cube long row, find all squares that can be determined using this hint.<br>
+            <svg width="50" height="50" class="hintExample">
+                <text x="23" y="40" text-anchor="middle" fill="black" class="hintExampleText">4</text>
+            </svg>
+            <table id="example1" class="cellListTable">
+                <script>window.addEventListener("load", _ => fromId("example1").innerHTML = generateRow(["xxxx   ", " xxxx  ", "  xxxx ", "   xxxx", "       ", "---x---"]))</script>
+            </table>
+            Each row represents a possibility and the final row is what can be determined about the shape.<br>
+
+            <h2>Example 2</h2>
+            <h4>Given</h4>
+            <svg width="50" height="50" class="hintExample">
+                <text x="23" y="40" text-anchor="middle" fill="black" class="hintExampleText">4</text>
+                <circle cx="25" cy="25" r="22" stroke="#000" fill="#00000000" stroke-width="2"></circle>
+            </svg>
+            <table id="example2start" class="cellListTable">
+                <script>window.addEventListener("load", _ => fromId("example2start").innerHTML = generateRow(["xx---"]))</script>
+            </table>
+            <h4>Possibilites</h4>
+            <table id="example2" class="cellListTable">
+                <script>window.addEventListener("load", _ => fromId("example2").innerHTML = generateRow(["xx xx", "xxx x"]))</script>
+            </table>
+            <h4>Solution</h4>
+            <table id="example2poss" class="cellListTable">
+                <script>window.addEventListener("load", _ => fromId("example2poss").innerHTML = generateRow(["xx--x"]))</script>
+            </table>
+            5 total - 4 colored = 1 broken<br>
+            In order to have a gap, the broken cell can not be on the two sides of the row. That means those are guaranteed colored. What we know about the original state of the row, the first two cells are colored in. That leaves the one broken cell in either the 3rd or 4th position; all other cells are colored.
+            <style>
+                .cellListTable {
+                    border-collapse: collapse;
+                }
+
+                .cellList>td {
+                    width: 50px;
+                    height: 50px;
+                    border: 1px solid #000;
+                }
+
+                .cellList>td.c {
+                    background: #FF0000;
+                }
+
+                .cellList>td.u {
+                    background: #FFF;
+                }
+
+                .hintExampleText {
+                    font-size: 40px;
+                    font-family: Consolas;
+                    text-align: center;
+                    vertical-align: center;
+                }
+
+                .hintExample {
+                    border: 1px solid #000;
+                }
+            </style>
+            <script>
+                function generateRow(rows) {
+                    let html = "";
+                    for(let i = 0; i < rows.length; i++) {
+                        html += "<tr class='cellList'>";
+                        let char;
+                        for(let x = 0; x < rows[i].length; x++) {
+                            char = rows[i].charAt(x);
+                            html += (char == "x" ? "<td class='c'></td>" : (char == "-" ? "<td class='u'></td>" : "<td></td>"));
+                        }
+                        html += "</tr>";
+                    }
+                    return html;
+                }
+
+            </script>
+
         </div>
         <div class="popup_page" id="settings">
 

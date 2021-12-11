@@ -26,7 +26,7 @@ window.scene = {
     },
     debug: {
     },
-    cardinal: [],
+    sliceGuides: [],
     input: {
         xRot: 0,
         yRot: 0,
@@ -88,9 +88,15 @@ window.createSceneBasics = function () {
     scene.light = new THREE.PointLight(0xfff8ee, 1, 0, 1);
     scene.camera.add(scene.light);
     scene.light.position.set(0, 10, -30);
-    //Debug objects
+    //Selectors
     scene.faceSelector = new THREE.Mesh(new THREE.PlaneGeometry(1, 1, 1, 1), new THREE.MeshStandardMaterial({color: 0x0000FF, side: THREE.DoubleSide}));
     scene.obj.add(scene.faceSelector);
+    for(let i = 0; i < 3; i++) {
+        scene.sliceGuides[i] = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), new THREE.MeshStandardMaterial({color: 0xFF0000 >> (i * 8)}));
+        scene.obj.add(scene.sliceGuides[i]);
+    }
+    //Debug objects
+
     //scene.debug.cursorIndicator=new THREE.Mesh(geometry,scene.materials.painted);
     //scene.obj.add(scene.debug.cursorIndicator);
     scene.input.doRender = true;
@@ -208,7 +214,27 @@ window.updateScene = function () {
         }
         scene.voxels[i].visible = !!isVisible;
     });
-    scene.input.doRender=true;
+    for(let i = 0; i < 3; i++) {
+        if(slicer.minorDirection != i && slicer.minorAxis != -1) {
+            scene.sliceGuides[i].visible = false;
+            continue;
+        }
+        else scene.sliceGuides[i].visible = true;
+        let char = "xyz".charAt(i);
+        let halfAxes = [1, 2, 1];
+        let otherAxes = [2, 0, 0];
+        let position = new THREE.Vector3(0, 0, 0);
+        let cameraFacing = scene.camera.position[char] < 0;
+        position[char] = (puzzle.size[i] + 0.75) * (cameraFacing ? -1 : 1) / 2;
+        if(slicer.minorDirection == i && slicer.minorAxis != -1) {
+            position[char] += slicer.slices[slicer.minorAxis];
+            position[char] -= (cameraFacing ? 0 : puzzle.size[slicer.minorDirection] - 1);
+        }
+        position["xyz".charAt(halfAxes[i])] = 0;
+        position["xyz".charAt(otherAxes[i])] = (puzzle.size[otherAxes[i]] + 0.75) * (scene.camera.position["xyz".charAt(otherAxes[i])] < 0 ? 1 : -1) / 2;
+        scene.sliceGuides[i].position.copy(position);
+    }
+    scene.input.doRender = true;
 }
 //Returns the position of the cursor in 3d space
 window.getCursorPosition = function () {
@@ -330,6 +356,12 @@ Slicer.prototype.update = function (index, newValue, setType, allowMinor) {
             slices[index] = newValue;
         }
         else {
+            if(index == this.minorAxis) {
+                if(newValue < 0 || newValue >= this.maxes[index]) {
+                    slices[index] = -1 - this.minorDirection;
+                    newValue = -1 - this.minorDirection;
+                }
+            }
             //Delete minor axis if conflicts with new value
             if(this.minorDirection == -1 - newValue) {
                 this.minorAxis = -1;
