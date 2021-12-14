@@ -45,6 +45,22 @@ Puzzle.prototype.getHintPosition = function (positionIndex, direction) {
     let above = Math.floor(positionIndex / this.spacing[direction + 1]) * this.spacing[direction];
     return this.maxFaceSize * direction + below + above;
 }
+Puzzle.prototype.unslicePosition = function (pos, dims) {
+    let size = [];
+    for(let i in [0, 1, 2]) size[i] = this.size[dims.indexOf(-1 - i)] || 1;
+    let posArray = dims.slice();
+    posArray[dims.indexOf(-1)] = pos % size[0];
+    posArray[dims.indexOf(-2)] = Math.floor(pos / size[0]) % size[1];
+    posArray[dims.indexOf(-3)] = Math.floor(pos / size[0] / size[1]) % size[2];
+    return this.collapsePos(posArray);
+}
+Puzzle.prototype.getXYZ = function (position) {
+    let out = [];
+    for(let i = 0; i < this.dimension; i++) {
+        out[i] = Math.floor(position / this.spacing[i]) % this.size[i];
+    }
+    return out;
+}
 //Extra data generation
 Puzzle.prototype.generateHints = function () {
     this.hintsPieces = new Array(this.maxFaceSize * this.dimension);
