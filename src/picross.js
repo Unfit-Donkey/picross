@@ -163,6 +163,23 @@ Puzzle.prototype.rayIntersect = function (start, vel) {
     }
     return {pos: -1, face: -1};
 }
+Puzzle.prototype.fromDifficulty = function (difficulty) {
+    //Random number generator seeded with a
+    function mulberry32(a) {
+        return function () {
+            var t = a += 0x6D2B79F5;
+            t = Math.imul(t ^ t >>> 15, t | 1);
+            t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+            return ((t ^ t >>> 14) >>> 0) / 4294967296;
+        }
+    }
+    let rand = mulberry32(0xDEADBEEF);
+    let out = Puzzle.fromString(this.toString());
+    out.foreachHint((cell, total, pieces, dim, i) => {
+        if(rand() < difficulty) out.hintsPieces[dim * out.maxFaceSize + i] = 0;
+    });
+    return out;
+}
 //Foreach functions
 Puzzle.prototype.foreachCell = function (func) {
     let pos = new Array(this.dimension);
