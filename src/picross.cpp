@@ -15,7 +15,27 @@ typedef enum Cell : char {
 typedef struct Hint {
     unsigned char total;
     unsigned char pieceCount;
+    int getComplexity() {
+        return total + pieceCount * 10;
+    }
 } Hint;
+struct SolveTime {
+    int zeroes;
+    int rowComplexity;
+    int puzzleSize;
+    int cellChecks;
+    double getSeconds() {
+        cout << "zeroes: " <<zeroes<<endl;
+        cout << "rowC: " <<rowComplexity<<endl;
+        cout << "puzzleSize: " <<puzzleSize<<endl;
+        cout << "cellChecks: " <<cellChecks<<endl;
+        return
+            zeroes * 0.05
+            + rowComplexity * 0.01
+            + puzzleSize * 0.3
+            + cellChecks * 0.01;
+    }
+};
 void solveRow(int total, int pieces, int rowLength, Cell* row, Cell* out);
 void printCells(Cell* cells, int count) {
     const char* type = "E +-EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE";
@@ -100,7 +120,12 @@ public:
         free(shape);
         shape = (Cell*)calloc(shapeSize, sizeof(Cell));
     }
-    void solve() {
+    struct SolveTime solve() {
+        struct SolveTime time;
+        time.zeroes = 0;
+        time.puzzleSize = spacing[dimension - 1] * size[dimension - 1];
+        time.rowComplexity = 0;
+        time.cellChecks = 0;
         bool isChange = true;
         int changeCount = 0;
         int loopCount = 0;
@@ -110,10 +135,13 @@ public:
                 Cell row[size[dim]];
                 Cell out[size[dim]];
                 for(int i = 0;i < shapeSize;i++) {
-                    memset(out, 0, size[dim]);
                     //If not first cell in row
                     if((i / spacing[dim]) % size[dim] != 0) continue;
+                    memset(out, 0, size[dim]);
                     Hint hint = hints[getRowPosition(i, dim) + dim * maxFaceSize];
+                    if(hint.pieceCount == 1 && hint.total == 0) time.zeroes += size[dim];
+                    else time.cellChecks += size[dim];
+                    time.rowComplexity += hint.getComplexity();
                     getRow(i, dim, row);
                     solveRow(hint.total, hint.pieceCount, size[dim], row, out);
                     if(memcmp(row, out, size[dim] * sizeof(Cell)) != 0) {
@@ -128,6 +156,7 @@ public:
         }
         cout << "Change count: " << changeCount << endl;
         cout << "Loop count: " << loopCount << endl;
+        return time;
     }
     void generateHints() {
         free(hints);
@@ -352,8 +381,8 @@ void setPuzzle(string str) {
 void doHints() {
     puz->generateHints();
 }
-void solveCurrentPuzzle() {
-    puz->solve();
+double solveCurrentPuzzle() {
+    return puz->solve().getSeconds();
 }
 #ifdef __EMSCRIPTEN__
 EMSCRIPTEN_BINDINGS(a) {
