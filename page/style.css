@@ -31,7 +31,22 @@ button {
 u {
     text-decoration:underline;
 }
-
+#error {
+    position:absolute;
+    display:inline-block;
+    top: 75%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events:none;
+    z-index:500;
+    background:#FF000088;
+    color:#FFFFFF;
+    font-size:1.5em;
+    box-sizing:border-box;
+    padding:0.5em;
+    border-radius:1.5em;
+    opacity:0;
+}
 #slicer {
     display:inline-block;
     position:absolute;
@@ -109,30 +124,31 @@ u {
 .option_button:first-child {
     border-top-width:0.05em;
 }
+#mainmenu > button {
+    width:100%;
+}
 #popup_box {
-    background:#ca9d58;
+    background:#FFFFFF88;
     width:70%;
     max-width:100%;
     min-width:400px;
     height:70%;
-    max-height:100%;
-    min-height:400px;
     position:absolute;
     margin:auto;
     top:0;
     left:0;
     right:0;
     bottom:0;
-    border-radius:1em;
     z-index:100;
-    padding: 20px;
+    padding: 20px 0 20px 20px;
     line-height: 1.5em;
     overflow-y:scroll;
     scrollbar-width: thin;
     scrollbar-color: #00000088 none;
+    border:2px solid #000000;
 }
 #popup_box::-webkit-scrollbar {
-    width: 24px;
+    width: 20px;
 }
 #popup_box::-webkit-scrollbar-thumb {
     background-color: #00000088;
@@ -143,27 +159,18 @@ u {
 }
 #popup_box button, #popup_box input {
     padding:5px;
-    background:none;
-    box-shadow: inset 0 0 10px 1px rgba(50,0,0,0.5);
-    background:#00000010;
-    border-radius:10px;
+    background:#FFFFFF;
     font-size:15pt;
-    border:none;
+    border:2px solid #000000;
 }
 #popup_box button:hover, #popup_box input:hover {
-    background:#00000030;
+    outline:2px solid #000;
 }
 #popup_box button:focus, #popup_box input:focus {
-    outline:5px solid #000;
+    outline:2px solid #000;
 }
 .popup_page {
     display:none;
-}
-#popup_close {
-    width:5%;
-    height:5%;
-    border-radius:1em 0 1 em 0;
-    background:#88888833;
 }
 #popup_background {
     position:absolute;
@@ -173,8 +180,8 @@ u {
     top:0;
     width:100%;
     height:100%;
-    backdrop-filter:blur(2px);
-    -webkit-backdrop-filter:blur(2px);
+    backdrop-filter:blur(3px);
+    -webkit-backdrop-filter:blur(3px);
 }
 #main_menu {
     text-align:center;

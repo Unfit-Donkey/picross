@@ -37,6 +37,15 @@ function openGameMode(type) {
     showAll(type);
     showPopup(firstPage[types.indexOf(type)]);
 }
+function printError(message) {
+    let error = fromId("error");
+    error.innerHTML = message;
+    error.style.transition = "none";
+    error.style.opacity = "1";
+    error.offsetHeight;
+    error.style.transition = "opacity 1s ease 2s";
+    error.style.opacity = "0";
+}
 const keyboardCommands = [
     {key: "p", func: pastePuzzle, type: "sandbox"},
     {key: "y", func: copyPuzzle, type: "sandbox"},
@@ -44,7 +53,7 @@ const keyboardCommands = [
     {key: "a", func: _ => slicer.update(slicer.focusedSlice, null, "inc")},
     {key: "w", func: _ => slicer.update(slicer.focusedSlice - 1)},
     {key: "s", func: _ => slicer.update(slicer.focusedSlice + 1)},
-    {key: "escape", func: _ => {hide("popup_box"); hide("popup_background");}},
+    {key: "escape", func: _ => {if(fromId('main_menu').style.display=="none") {hide("popup_box"); hide("popup_background");}}},
     {key: "e", func: _ => {showPopup("main_menu");}},
 ];
 onkeydown = function (e) {
@@ -75,6 +84,10 @@ function solveCurrentPuzzle() {
     fullPuzzle = Puzzle.fromString(Module.getPuzzle());
     scene.recreate();
 }
+function getSolveTime(puzzle) {
+    Module.setPuzzle(puzzle.toString());
+    return Module.solve();
+}
 function copyPuzzle() {
     let clipboard = document.getElementById("clipboard");
     clipboard.innerText = fullPuzzle.toBase64();
@@ -87,8 +100,8 @@ function pastePuzzle() {
             scene.recreate();
         }
         catch(e) {
+            printError("Invalid puzzle");
             console.log(e);
-            alert("Invalid puzzle format");
 
         }
     });
@@ -98,6 +111,18 @@ function newPuzzle() {
     show("popup_box");
     show("popup_background");
     updateAxisSizeList(3);
+}
+function loadPlayer() {
+    let data = fromId("puzzle_player_data").value;
+    try {
+        solvedPuzzle = Puzzle.fromBase64(data);
+        showOne("popup_page", "puzzle_difficulty_enteror");
+    }
+    catch(e) {
+        printError("Invalid puzzle");
+        throw e;
+
+    }
 }
 const cell_unsure = 3;
 const cell_colored = 2;

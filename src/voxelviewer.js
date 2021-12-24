@@ -7,6 +7,7 @@ window.Puzzle = Puzzle;
 window.THREE = THREE;
 window.puzzle = new Puzzle(3, [12, 7, 5]);
 window.fullPuzzle = Puzzle.fromBase64('eJwzrvP1cKvT1h0Fgx3UOcKBExA4A4G7k7uTMxA6OYFE3Z28nNyc3ZyxySH0gWhnJDEEcHbyAOsAQVcnhB4QzxkOQaaD+LjU4zYfKO6MycIn7uKEgLjEIQDkTnRVMP+6OLk5oYtCwsHVGV29o2N1LQBBAKlv');
+window.solvedPuzzle = null;
 window.scene = {
     camera: null,
     obj: null,
@@ -51,6 +52,7 @@ window.scene = {
         scene.camera.updateMatrixWorld();
         scene.camera.updateProjectionMatrix();
         scene.renderer.setSize(window.innerWidth, window.innerHeight, true);
+        input.doRender = true;
     },
     createBasics: function () {
         //Camera, scene, and renderer
@@ -254,6 +256,7 @@ window.input = {
         input.latestEvent = e;
         if(slicer.active) return slicer.drag();
         if(e.buttons & 1 == 1 || e.type == "touchmove") {
+            if(fromId("popup_background").style.display!='none') return;
             if(e.ctrlKey || e.shiftKey) {
                 input.cubeClick();
             }
@@ -265,13 +268,13 @@ window.input = {
         input.cubeClick();
     },
     onload: function () {
+        input.doRender = true;
         input.addListeners();
         scene.createBasics();
         scene.viewportResize();
         slicer.create(puzzle);
         scene.recreate();
         scene.render();
-        console.log("loading");
     },
     cubeClick: function () {
         let e = input.latestEvent;

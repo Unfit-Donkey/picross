@@ -34,9 +34,9 @@
             <button class="option_button" onclick="solveCurrentPuzzle()">S<u>o</u>lve</button>
         </div>
     </div>
+    <div id="error"></div>
     <!-- Menus -->
     <div id="popup_box">
-        <button tabindex="1" id="popup_close" onclick="hide('popup_box');hide('popup_background');">x</button>
         <div class="popup_page" id="main_menu" style="display:block">
             <button onclick="openGameMode('player');" tabindex="2">Play puzzle</button>
             <button onclick="openGameMode('creator');" tabindex="3">Create puzzle</button>
@@ -46,6 +46,7 @@
             <button onclick="showPopup('settings')" tabindex="7">Settings</button>
         </div>
         <div class="popup_page creator solver" id="puzzle_creator_popup">
+            <button tabindex="1" class="popup_close" onclick="showPopup('main_menu')">&times;</button>
             <div class="creator sandbox">
                 <label for="puzzle_data">Duplicate from text:</label><input type="text" id="puzzle_data"
                        placeholder="eJxzSizOTFYoKK2qykmtM67z9XCr09YdB" tabindex="101">
@@ -62,7 +63,6 @@
             </ol>
             <br>
             <button onclick="createPuzzle()" tabindex="130">Go!</button>
-            <div id="create_puzzle_error"></div>
             <script>
                 function updateAxisSizeList(dim) {
                     dim = Math.min(dim, 10);
@@ -78,7 +78,7 @@
                         try {
                             fullPuzzle = Puzzle.fromBase64(document.getElementById("puzzle_data").value);
                         } catch(e) {
-                            errorOutput.innerHTML = "Error: Invalid puzzle string (see console for details)";
+                            printError("Invalid puzzle string");
                             throw e;
                         }
                     }
@@ -86,14 +86,14 @@
                         let name = fromId("puzzle_name").value || "Basic Puzzle";
                         let dimension = Number(fromId("puzzle_dimension").value || 3);
                         if(dimension > 10 || dimension < 1) {
-                            return errorOutput.innerHTML = "Error: Dimension must be between 1 and 10";
+                            return printError("Dimension must be from 1-10");
                         }
                         let axises = fromId("axis_size_list");
                         let size = [];
                         for(let i = 0; i < axises.children.length; i++) {
                             size[i] = Number(axises.children[i].children[0].value || 4);
                             if(size[i] < 1 || size[i] > 32) {
-                                return errorOutput.innerHTML = "Error: Axis size must be between 1 and 32";
+                                return printError("Axis size must be from 1-32");
                             }
                         }
                         console.log("New puzzle: ", name, dimension, size);
@@ -110,12 +110,21 @@
             </script>
         </div>
         <div class="popup_page" id="puzzle_data_enteror">
+            <button tabindex="1" class="popup_close" onclick="showPopup('main_menu')">&times;</button>
             Puzzle data:<br>
-            <input type="text" placeholder="eJxzSizOTFYoKK2qykmtM67z9XCr09YdB" id="puzzle_player_data" tabindex="101">
-            <button tabindex="102">Start!</button>
-            <div id="puzzle_player_error"></div>
+            <input type="text" placeholder="eJxzSizOTFYoKK2qykmtM67z9XCr09YdB" id="puzzle_player_data"
+                   tabindex="101"><br>
+            <button tabindex="102" onclick="loadPlayer()"></button>
+        </div>
+        <div class="popup_page" id="puzzle_difficulty_enteror">
+            <button tabindex="1" class="popup_close" onclick="showPopup('puzzle_data_enteror')">&times;</button>
+            <input type="number" step="0.05" value="0.5" max="1" min="0" id="puzzle_difficulty"
+                   onchange="fromId('estimated_puzzle_time').innerText = solvedPuzzle.fromDifficulty(this.value).estimateTime()">
+            Estimated time: <span id="estimated_puzzle_time"></span>
+            <button tabindex="102" onclick='loadPlayer()'>Start!</button>
         </div>
         <div class="popup_page" id="shortcuts_popup">
+            <button tabindex="1" class="popup_close" onclick="hide('popup_box');hide('popup_background')">&times;</button>
             <div class="sandbox creator player">
                 <p>Underlined characters in the upper-right buttons are their shortcut</p>
                 <h3>Universal</h3>
@@ -151,6 +160,7 @@
             </div>
         </div>
         <div class="popup_page" id="metadata_popup">
+            <button tabindex="1" class="popup_close" onclick="hide('popup_box');hide('popup_background')">&times;</button>
             <label for="puzzle_name">Name: </label><input id="puzzle_name"
                    onchange="fullPuzzle.metadata.name=this.value"><br>
             <label for="puzzle_background">Background: </label><input id="puzzle_url" placeholder="https://"
@@ -160,6 +170,7 @@
             <button onclick="copyPuzzle()">Copy puzzle</button>
         </div>
         <div class="popup_page" id="guide_popup">
+            <button tabindex="1" class="popup_close" onclick="showPopup('main_menu')">&times;</button>
             <h2>Concept</h2>
             Each puzzle is composed of a grid of blocks that are split up into rows. Some rows have hints that indicate
             information about the colored blocks in the row.
@@ -266,6 +277,7 @@
 
         </div>
         <div class="popup_page" id="settings">
+            <button tabindex="1" class="popup_close" onclick="showPopup('main_menu')">&times;</button>
 
         </div>
         <script>
@@ -280,4 +292,5 @@
     </div>
     <div id="popup_background"></div>
     <div style="display:none" id="clipboard"> </div>
+
 </html>
