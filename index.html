@@ -19,7 +19,8 @@
         </div>
         <!-- Action buttons -->
         <div class="option_buttons_holder" id="puzzle_viewer">
-            <button class="option_button" onclick="window.open('https://benjamin-cates.github.io/picross/guide')">Help</button>
+            <button class="option_button"
+                    onclick="window.open('https://benjamin-cates.github.io/picross/guide')">Help</button>
             <button class="option_button" onclick="showPopup('shortcuts_popup')">Shortcuts</button>
             <button class="option_button" onclick="showPopup('main_menu')"><u>E</u>xit</button>
 
@@ -47,7 +48,8 @@
                 <button onclick="openGameMode('player');" tabindex="2">Play</button>
                 <button onclick="openGameMode('creator');" tabindex="3">Create</button>
                 <button onclick="openGameMode('solver');" tabindex="4">Solve</button>
-                <button onclick="window.open('https://benjamin-cates.github.io/picross/guide','_blank');" tabindex="7">Guide/Info</button>
+                <button onclick="window.open('https://benjamin-cates.github.io/picross/guide','_blank');"
+                        tabindex="7">Guide/Info</button>
             </div>
             <div class="popup_page" id="puzzle_creator_popup">
                 <button tabindex="1" class="popup_close" onclick="showPopup('main_menu')">&times;</button>
@@ -64,50 +66,6 @@
                 </ol>
                 <br>
                 <button onclick="createPuzzle()" tabindex="130">Go!</button>
-                <script>
-                    function updateAxisSizeList(dim) {
-                        dim = Math.min(dim, 10);
-                        let text = "";
-                        for(let i = 0; i < dim; i++) {
-                            text += "<li><input type='number' min='1' max='32' placeholder='4' tabindex='" + (110 + i) + "'></li>";
-                        }
-                        fromId("axis_size_list").innerHTML = text;
-                    }
-                    function createPuzzle() {
-                        const errorOutput = fromId("create_puzzle_error");
-                        if(document.getElementById("puzzle_data").value != "") {
-                            try {
-                                fullPuzzle = Puzzle.fromBase64(document.getElementById("puzzle_data").value);
-                            } catch(e) {
-                                printError("Invalid puzzle string");
-                                throw e;
-                            }
-                        }
-                        else {
-                            let dimension = Number(fromId("puzzle_dimension").value || 3);
-                            if(dimension > 10 || dimension < 1) {
-                                return printError("Dimension must be from 1-10");
-                            }
-                            let axises = fromId("axis_size_list");
-                            let size = [];
-                            for(let i = 0; i < axises.children.length; i++) {
-                                size[i] = Number(axises.children[i].children[0].value || 4);
-                                if(size[i] < 1 || size[i] > 32) {
-                                    return printError("Axis size must be from 1-32");
-                                }
-                            }
-                            console.log("New puzzle: ", name, dimension, size);
-                            fullPuzzle = new Puzzle(dimension, size, name);
-                            fullPuzzle.shape.fill(3);
-                            fullPuzzle.hintsTotal.fill(0);
-                            fullPuzzle.hintsPieces.fill(0);
-                        }
-                        scene.recreate(true);
-                        slicer.create(fullPuzzle);
-                        hide("popup_box");
-                        hide("popup_background");
-                    }
-                </script>
             </div>
             <div class="popup_page" id="puzzle_data_enteror">
                 <button tabindex="1" class="popup_close" onclick="showPopup('main_menu')">&times;</button>
@@ -124,24 +82,9 @@
                 Estimated time: <span id="estimated_puzzle_time"></span>
                 <button tabindex="102"
                         onclick="fullPuzzle=solvedPuzzle.fromDifficulty(fromId('puzzle_difficulty').value);scene.recreate(true);hide('popup_box');hide('popup_background')">Start!</button>
-                <script>
-                    function timeText(time) {
-                        let out = "";
-                        time = Math.round(time);
-                        out += (time % 60) + "s";
-                        time = Math.floor(time / 60);
-                        if(time != 0) {
-                            out = (time % 60) + "m " + out;
-                            time = Math.floor(time / 60);
-                        }
-                        if(time != 0) out = time + "h " + out;
-                        return out;
-                    }
-                </script>
             </div>
             <div class="popup_page" id="shortcuts_popup">
-                <button tabindex="1" class="popup_close"
-                        onclick="hide('popup_box');hide('popup_background')">&times;</button>
+                <button tabindex="1" class="popup_close" onclick="showPopup('none')">&times;</button>
                 <div class="sandbox creator player">
                     <p>Underlined characters in the upper-right buttons are their shortcut</p>
                     <h3>Universal</h3>
@@ -177,28 +120,20 @@
                 </div>
             </div>
             <div class="popup_page" id="metadata_popup">
-                <button tabindex="1" class="popup_close"
-                        onclick="hide('popup_box');hide('popup_background')">&times;</button>
+                <button tabindex="1" class="popup_close" onclick="showPopup('none')">&times;</button>
                 <div id="metadata_inputs">
                 </div>
                 <button onclick="copyPuzzle()">Copy puzzle</button>
             </div>
             <div class="popup_page" id="settings">
                 <button tabindex="1" class="popup_close" onclick="showPopup('main_menu')">&times;</button>
-
             </div>
             <script>
-                function showPopup(id) {
-                    hideAll("popup_page");
-                    show(id);
-                    show("popup_background");
-                    show("popup_box");
-                }
-
             </script>
         </div>
         <div id="popup_background"></div>
         <div style="display:none" id="clipboard"> </div>
         <canvas id="canvas"></canvas>
     </body>
+
 </html>

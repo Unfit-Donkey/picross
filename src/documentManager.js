@@ -7,6 +7,18 @@ function showOne(list, id) {
 function show(id) {
     fromId(id).style.display = "block";
 }
+function showPopup(id) {
+    if(id == "none") {
+        hide("popup_background");
+        hide("popup_box");
+        return;
+    }
+    hideAll("popup_page");
+    show(id);
+    show("popup_background");
+    show("popup_box");
+}
+
 function hideAll(classId) {
     let list = Array.from(document.getElementsByClassName(classId));
     for(let i in list) list[i].style.display = "none";
@@ -77,6 +89,60 @@ function openGameMode(type) {
     showAll(type);
     showPopup(firstPage[types.indexOf(type)]);
     updateAxisSizeList(3);
+}
+function updateAxisSizeList(dim) {
+    dim = Math.min(dim, 10);
+    let text = "";
+    for(let i = 0; i < dim; i++) {
+        text += "<li><input type='number' min='1' max='32' placeholder='4' tabindex='" + (110 + i) + "'></li>";
+    }
+    fromId("axis_size_list").innerHTML = text;
+}
+function createPuzzle() {
+    const errorOutput = fromId("create_puzzle_error");
+    if(document.getElementById("puzzle_data").value != "") {
+        try {
+            fullPuzzle = Puzzle.fromBase64(document.getElementById("puzzle_data").value);
+        } catch(e) {
+            printError("Invalid puzzle string");
+            throw e;
+        }
+    }
+    else {
+        let dimension = Number(fromId("puzzle_dimension").value || 3);
+        if(dimension > 10 || dimension < 1) {
+            return printError("Dimension must be from 1-10");
+        }
+        let axises = fromId("axis_size_list");
+        let size = [];
+        for(let i = 0; i < axises.children.length; i++) {
+            size[i] = Number(axises.children[i].children[0].value || 4);
+            if(size[i] < 1 || size[i] > 32) {
+                return printError("Axis size must be from 1-32");
+            }
+        }
+        console.log("New puzzle: ", name, dimension, size);
+        fullPuzzle = new Puzzle(dimension, size, name);
+        fullPuzzle.shape.fill(3);
+        fullPuzzle.hintsTotal.fill(0);
+        fullPuzzle.hintsPieces.fill(0);
+    }
+    scene.recreate(true);
+    slicer.create(fullPuzzle);
+    hide("popup_box");
+    hide("popup_background");
+}
+function timeText(time) {
+    let out = "";
+    time = Math.round(time);
+    out += (time % 60) + "s";
+    time = Math.floor(time / 60);
+    if(time != 0) {
+        out = (time % 60) + "m " + out;
+        time = Math.floor(time / 60);
+    }
+    if(time != 0) out = time + "h " + out;
+    return out;
 }
 function printError(message) {
     let error = fromId("error");
