@@ -1,4 +1,4 @@
-import * as THREE from "../three.js/build/three.module.js";
+import * as THREE from "../lib/three.module.min.js";
 import {Puzzle} from "./picross.js";
 const cell_broken = 1;
 const cell_colored = 2;
