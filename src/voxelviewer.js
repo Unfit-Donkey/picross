@@ -54,8 +54,8 @@ window.scene = {
         scene.renderer.setSize(window.innerWidth * scale, window.innerHeight * scale, true);
         input.doRender = true;
         //change canvas size
-        scene.canvas.style.width = window.innerWidth+"px";
-        scene.canvas.style.height = window.innerHeight+"px";
+        scene.canvas.style.width = window.innerWidth + "px";
+        scene.canvas.style.height = window.innerHeight + "px";
     },
     createBasics: function () {
         scene.canvas = fromId("canvas");

@@ -30,21 +30,21 @@ function convertColor(n) {
     return window.getComputedStyle(el).backgroundColor;
 }
 window.PuzzleMeta = [
-    {name: "color", placeholder: "hex or word", default: "rgb(187,255,153)", onchange: _=>scene.setPaintColor()},
-    {name: "metalness", placeholder: "0.5", default: 0.5, onchange: _=>scene.setPaintColor()},
-    {name: "background", placeholder: "https://", default: null, onchange: _=>scene.setBackground()},
-    {name: "roughness", placeholder: "0", default: 0, onchange: _=>scene.setPaintColor()},
+    {name: "color", placeholder: "hex or word", default: "rgb(187,255,153)", onchange: _ => scene.setPaintColor()},
+    {name: "metalness", placeholder: "0.5", default: 0.5, onchange: _ => scene.setPaintColor()},
+    {name: "background", placeholder: "https://", default: null, onchange: _ => scene.setBackground()},
+    {name: "roughness", placeholder: "0", default: 0, onchange: _ => scene.setPaintColor()},
     {name: "name", placeholder: "Puzzle", defualt: "Puzzle"},
 ];
 function editMetadata(name, value) {
     fullPuzzle.metadata[name] = value;
-    for(let i in PuzzleMeta) if(PuzzleMeta[i].name==name) if(PuzzleMeta[i].onchange)
+    for(let i in PuzzleMeta) if(PuzzleMeta[i].name == name) if(PuzzleMeta[i].onchange)
         PuzzleMeta[i].onchange(value);
 }
 function generateMetaInputs() {
     let out = "";
     for(let i in PuzzleMeta) {
-        let n=PuzzleMeta[i].name;
+        let n = PuzzleMeta[i].name;
         out += `
         <label for="puzzle_${n}">${n}: </label><input type="text" id="puzzle_${n}" placeholder="${PuzzleMeta[i].placeholder}" oninput="editMetadata('${n}',this.value)"`;
         if(fullPuzzle.metadata[n])
@@ -90,6 +90,7 @@ function printError(message) {
 const keyboardCommands = [
     {key: "p", func: pastePuzzle, type: "sandbox"},
     {key: "y", func: copyPuzzle, type: "sandbox"},
+    {key: "h", func: _ => window.open("https://benjamin-cates.github.io/picross/guide", "_blank")},
     {key: "d", func: _ => slicer.update(slicer.focusedSlice, null, "dec")},
     {key: "a", func: _ => slicer.update(slicer.focusedSlice, null, "inc")},
     {key: "w", func: _ => slicer.update(slicer.focusedSlice - 1)},

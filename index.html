@@ -19,6 +19,7 @@
         </div>
         <!-- Action buttons -->
         <div class="option_buttons_holder" id="puzzle_viewer">
+            <button class="option_button" onclick="window.open('https://benjamin-cates.github.io/picross/guide')">Help</button>
             <button class="option_button" onclick="showPopup('shortcuts_popup')">Shortcuts</button>
             <button class="option_button" onclick="showPopup('main_menu')"><u>E</u>xit</button>
 
@@ -46,7 +47,7 @@
                 <button onclick="openGameMode('player');" tabindex="2">Play</button>
                 <button onclick="openGameMode('creator');" tabindex="3">Create</button>
                 <button onclick="openGameMode('solver');" tabindex="4">Solve</button>
-                <button onclick="window.open('https://benjamin-cates.github.io/picross/guide/guide.html','_blank');" tabindex="7">Guide/Info</button>
+                <button onclick="window.open('https://benjamin-cates.github.io/picross/guide','_blank');" tabindex="7">Guide/Info</button>
             </div>
             <div class="popup_page" id="puzzle_creator_popup">
                 <button tabindex="1" class="popup_close" onclick="showPopup('main_menu')">&times;</button>
