@@ -16,7 +16,6 @@ window.scene = {
     materials: {
         unsure: new THREE.MeshStandardMaterial({color: 0xffffff}),
         painted: new THREE.MeshStandardMaterial({color: 0xbbff99, metalness: 0.5, roughness: 0}),
-        selected: new THREE.MeshStandardMaterial({color: 0xff0000}),
         wire: new THREE.LineBasicMaterial({color: 0x444444, linewidth: 2}),
         text: {
             painted: [],
@@ -51,13 +50,18 @@ window.scene = {
         scene.camera.bottom = -frustumSize / aspect;
         scene.camera.updateMatrixWorld();
         scene.camera.updateProjectionMatrix();
-        scene.renderer.setSize(window.innerWidth, window.innerHeight, true);
+        let scale = window.devicePixelRatio;
+        scene.renderer.setSize(window.innerWidth * scale, window.innerHeight * scale, true);
         input.doRender = true;
+        //change canvas size
+        scene.canvas.style.width = window.innerWidth+"px";
+        scene.canvas.style.height = window.innerHeight+"px";
     },
     createBasics: function () {
+        scene.canvas = fromId("canvas");
         //Camera, scene, and renderer
-        scene.renderer = new THREE.WebGLRenderer({antialias: true});
-        scene.renderer.setClearColor(0xffffff);
+        scene.renderer = new THREE.WebGLRenderer({antialias: true, alpha: true, canvas: scene.canvas});
+        scene.renderer.setClearColor(0x000000, 0);
         scene.camera = new THREE.OrthographicCamera(0, 0, 0, 0, -1000, 1000);
         scene.obj = new THREE.Scene();
         scene.obj.add(scene.camera);
@@ -70,7 +74,7 @@ window.scene = {
         scene.camera.add(scene.light);
         scene.light.position.set(0, 10, -30);
         //Selectors
-        scene.faceSelector = new THREE.Mesh(new THREE.PlaneGeometry(1, 1, 1, 1), new THREE.MeshStandardMaterial({color: 0x0000FF, side: THREE.DoubleSide}));
+        scene.faceSelector = new THREE.Mesh(new THREE.PlaneGeometry(1, 1, 1, 1), new THREE.MeshStandardMaterial({color: 0x0000FF, side: THREE.DoubleSide, transparent: true, opacity: 0.5}));
         scene.obj.add(scene.faceSelector);
         for(let i = 0; i < 3; i++) {
             scene.sliceGuides[i] = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), new THREE.MeshStandardMaterial({color: 0xFF0000 >> (i * 8)}));
@@ -118,6 +122,9 @@ window.scene = {
             slicer.slices = [-1, -2, -3];
             slicer.minorAxis = -1;
             for(let i = 3; i < fullPuzzle.dimension; i++) slicer.slices.push(0);
+            if(fullPuzzle.metadata.background)
+                scene.setBackground(fullPuzzle.metadata.background);
+            scene.setPaintColor();
         }
         let renderedSlices = slicer.slices.slice();
         renderedSlices[slicer.minorAxis] = -1 - slicer.minorDirection;
@@ -174,7 +181,7 @@ window.scene = {
             let isVisible = (puzzle.visibleSides[i] & visibleSideMap);
             if(slicer.minorAxis != -1) {
                 //Hide if in front of selected slice
-                if((pos[slicer.minorDirection] > slicer.slices[slicer.minorAxis] ? 1 : 0) ^ (scene.camera.position["xyz".charAt(slicer.minorDirection)] > 0 ? 0 : 1)) isVisible = 0;
+                if(pos[slicer.minorDirection] != slicer.slices[slicer.minorAxis]) isVisible = 0;
                 //Show if is in selected slice
                 if(pos[slicer.minorDirection] == slicer.slices[slicer.minorAxis]) {
                     if(puzzle.shape[i] != cell_broken) isVisible = 1;
@@ -210,6 +217,26 @@ window.scene = {
         else if(object instanceof THREE.Object3D) return;
         else if(object instanceof THREE.Material) return;
         else for(let i in object) this.destroyObjects(object[i]);
+    },
+    setBackground: function () {
+        document.body.style.backgroundImage = "url('" + fullPuzzle.metadata.background + "')";
+    },
+    setPaintColor: function () {
+        let col = convertColor(fullPuzzle.metadata.color);
+        let para = {color: null, roughness: NaN, metalness: NaN};
+        if(col == "rgba(0, 0, 0, 0)")
+            para.color = 0xbbff99;
+        else
+            para.color = rgbaToHex(col);
+        if(fullPuzzle.metadata.roughness != null) para.roughness = Number(fullPuzzle.metadata.roughness);
+        if(fullPuzzle.metadata.metalness != null) para.metalness = Number(fullPuzzle.metadata.metalness);
+        if(isNaN(para.roughness)) para.roughness = 0;
+        if(isNaN(para.metalness)) para.metalness = 0.5;
+        scene.materials.painted.dispose();
+        scene.materials.painted = new THREE.MeshStandardMaterial(para);
+        scene.materials.text.painted = [];
+        scene.materials.text.unsure = [];
+        scene.recreate();
     }
 };
 window.input = {
@@ -235,7 +262,7 @@ window.input = {
         };
     },
     mouseup: function (e) {
-        input.prev = {pos: -1, face: -1};
+        input.prevVoxel = {pos: -1, face: -1};
         input.setType = -1;
         slicer.active = false;
     },
@@ -256,7 +283,7 @@ window.input = {
         input.latestEvent = e;
         if(slicer.active) return slicer.drag();
         if(e.buttons & 1 == 1 || e.type == "touchmove") {
-            if(fromId("popup_background").style.display!='none') return;
+            if(fromId("popup_background").style.display != 'none') return;
             if(e.ctrlKey || e.shiftKey) {
                 input.cubeClick();
             }
@@ -267,6 +294,34 @@ window.input = {
         slicer.testClick();
         input.cubeClick();
     },
+    getURLParameters: function () {
+        let p = window.location.href.split("?").slice(1).join("");
+        if(p.length == 0) return;
+        let pList = p.split("&");
+        for(let i = 0; i < pList.length; i++) {
+            let name = pList[i].split("=")[0];
+            input.url[name] = pList[i].substring(name.length + 1);
+        }
+    },
+    URLParametersLoad: function () {
+        if(input.url.gamemode)
+            openGameMode(input.url.gamemode);
+        if(input.url.puz) {
+            try {
+                solvedPuzzle = Puzzle.fromBase64(input.url.puz);
+            }
+            catch(e) {
+                printError("invalid puzzle");
+            }
+        }
+        if(input.url.difficulty && solvedPuzzle != null) {
+            openGameMode("player");
+            fullPuzzle = solvedPuzzle.fromDifficulty(Number(input.url.difficulty));
+            scene.recreate(true);
+            hide('popup_box');
+            hide('popup_background')
+        }
+    },
     onload: function () {
         input.doRender = true;
         input.addListeners();
@@ -275,6 +330,8 @@ window.input = {
         slicer.create(puzzle);
         scene.recreate();
         scene.render();
+        input.getURLParameters();
+        input.URLParametersLoad();
     },
     cubeClick: function () {
         let e = input.latestEvent;
@@ -282,11 +339,14 @@ window.input = {
         let direction = new THREE.Vector3(0, 0, 0).copy(scene.camera.position).multiplyScalar(-1).normalize();
         let intersection = puzzle.rayIntersect(cursorPos, direction.toArray());
         if(intersection.pos != -1) {
-            if(input.prevVoxel.face != intersection.face && input.prevVoxel.face != -1) return;
+            console.log(e.type);
+            if(input.prevVoxel.face != intersection.face && input.prevVoxel.face != -1 && e.type != "mousedown" && e.type != "touchstart") return;
             if(slicer.minorAxis != -1) {
                 //Prevent from unfocused cubes
                 if(slicer.slices[slicer.minorAxis] != Math.floor(intersection.pos / puzzle.spacing[slicer.minorDirection]) % puzzle.size[slicer.minorDirection]) return;
             }
+            input.prevVoxel.face = intersection.face;
+            input.prevVoxel.pos = intersection.pos;
             let current = puzzle.shape[intersection.pos];
             if(e.ctrlKey && current != cell_colored) {
                 scene.updateVoxel(intersection.pos, cell_broken);
@@ -311,12 +371,14 @@ window.input = {
     latestEvent: {},
     doRender: true,
     boxSize: 0,
+    url: {},
     updateSelectedFace: function () {
         if(input.latestEvent.shiftKey || input.latestEvent.ctrlKey) {
             let cursorPos = input.getCursorPosition();
             let direction = new THREE.Vector3(0, 0, 0).copy(scene.camera.position).multiplyScalar(-1).normalize();
             let intersection = puzzle.rayIntersect(cursorPos, direction.toArray());
             if(intersection.pos != -1) if(input.selectedBlock != intersection.pos || input.selectedFace != intersection.face) {
+                scene.faceSelector.layers.mask = 1;
                 //scene.voxels[input.selectedBlock].material = scene.materials.selected;
                 scene.faceSelector.position.copy(scene.voxels[intersection.pos].position);
                 scene.faceSelector.position["xxyyzz".charAt(intersection.face)] += 0.51 * (intersection.face % 2 == 0 ? -1 : 1);
@@ -328,7 +390,11 @@ window.input = {
             input.selectedBlock = intersection.pos;
             input.selectedFace = intersection.face;
         }
-        else input.selectedBlock = -1;
+        else {
+            if(scene.faceSelector.layers.mask & 1 != 0) input.doRender = true;
+            scene.faceSelector.layers.mask = 0;
+            input.selectedBlock = -1;
+        }
     },
     updateRotation: function () {
         let oldVisibleSideMap = (scene.camera.position.x > 0 ? 2 : 1) + (scene.camera.position.y > 0 ? 2 : 1) * 4 + (scene.camera.position.z > 0 ? 2 : 1) * 16;

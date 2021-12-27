@@ -180,6 +180,10 @@ Puzzle.prototype.fromDifficulty = function (difficulty) {
     });
     return out;
 }
+Puzzle.prototype.estimateTime = function() {
+    Module.setPuzzle(this.toString());
+    return Module.solve();
+}
 //Foreach functions
 Puzzle.prototype.foreachCell = function (func) {
     let pos = new Array(this.dimension);

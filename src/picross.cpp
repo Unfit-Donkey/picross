@@ -25,10 +25,10 @@ struct SolveTime {
     int puzzleSize;
     int cellChecks;
     double getSeconds() {
-        cout << "zeroes: " <<zeroes<<endl;
-        cout << "rowC: " <<rowComplexity<<endl;
-        cout << "puzzleSize: " <<puzzleSize<<endl;
-        cout << "cellChecks: " <<cellChecks<<endl;
+        cout << "zeroes: " << zeroes << endl;
+        cout << "rowC: " << rowComplexity << endl;
+        cout << "puzzleSize: " << puzzleSize << endl;
+        cout << "cellChecks: " << cellChecks << endl;
         return
             zeroes * 0.05
             + rowComplexity * 0.01
@@ -40,6 +40,22 @@ void solveRow(int total, int pieces, int rowLength, Cell* row, Cell* out);
 void printCells(Cell* cells, int count) {
     const char* type = "E +-EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE";
     for(int i = 0;i < count;i++) cout << type[cells[i]];
+}
+void stringToRow(string str, Cell* row, int len) {
+    memset(row, 3, len);
+    for(int i = 0;i < str.size();i++) {
+        if(str[i] == ' ') row[i] = broken;
+        if(str[i] == '+') row[i] = painted;
+    }
+};
+string rowToString(Cell* row, int len) {
+    string out(len, ' ');
+    char types[4] = { 'E', ' ', '+', '?' };
+    for(int i = 0;i < len;i++) {
+        out[i] = types[int(row[i])];
+    }
+    out[len] = 0;
+    return out;
 }
 class Puzzle {
 public:
@@ -317,7 +333,8 @@ void solveRow(int total, int pieces, int rowLength, Cell* row, Cell* out) {
         return;
     }
     if(total == 0) {
-        memset(out, 0, rowLength);
+        if(pieces == 1) memset(out, broken, rowLength);
+        else memset(out, 0, rowLength);
         return;
     }
     //Generate possibilities for broken run
@@ -347,22 +364,6 @@ void solveRow(int total, int pieces, int rowLength, Cell* row, Cell* out) {
             }
         }
     }
-}
-void stringToRow(string str, Cell* row, int len) {
-    memset(row, 3, len);
-    for(int i = 0;i < str.size();i++) {
-        if(str[i] == ' ') row[i] = broken;
-        if(str[i] == '+') row[i] = painted;
-    }
-};
-string rowToString(Cell* row, int len) {
-    string out(len, ' ');
-    char types[4] = { 'E', ' ', '+', '?' };
-    for(int i = 0;i < len;i++) {
-        out[i] = types[int(row[i])];
-    }
-    out[len] = 0;
-    return out;
 }
 string solveRowJS(int total, int pieces, int rowLength, string row) {
     Cell rowCells[rowLength];

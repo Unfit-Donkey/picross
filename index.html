@@ -1,296 +1,203 @@
-<html>
+<!DOCTYPE HTML>
+<html lang="en">
 
-    <body>
 
-    </body>
 
     <head>
         <script src="src/compiled/picrossCpp.js"></script>
         <script src="src/voxelviewer.js" type="module"></script>
         <script src="src/documentManager.js"></script>
         <link rel="stylesheet" href="page/style.css" type="text/css">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="viewport" content="width=device-width, user-scalable=no">
+        <title>Picross</title>
     </head>
-    <canvas width="50" height="50" id="textRender" style="display:none"></canvas>
-    <!-- Slicer -->
-    <div id="slicer">
-    </div>
-    <!-- Action buttons -->
-    <div class="option_buttons_holder" id="puzzle_viewer">
-        <button class="option_button" onclick="showPopup('shortcuts_popup')">Shortcuts</button>
-        <button class="option_button" onclick="showPopup('main_menu')"><u>E</u>xit</button>
 
-        <div class="sandbox">
-            <button class="option_button" onclick="copyPuzzle()">Cop<u>y</u></button>
-            <button class="option_button" onclick="pastePuzzle()"><u>P</u>aste</button>
+    <body>
+        <canvas width="50" height="50" id="textRender" style="display:none"></canvas>
+        <!-- Slicer -->
+        <div id="slicer">
         </div>
-        <div class="creator">
-            <button class="option_button"><u>F</u>inish puzzle</button>
+        <!-- Action buttons -->
+        <div class="option_buttons_holder" id="puzzle_viewer">
+            <button class="option_button" onclick="showPopup('shortcuts_popup')">Shortcuts</button>
+            <button class="option_button" onclick="showPopup('main_menu')"><u>E</u>xit</button>
+
+            <div class="sandbox">
+                <button class="option_button" onclick="copyPuzzle()">Cop<u>y</u></button>
+                <button class="option_button" onclick="pastePuzzle()"><u>P</u>aste</button>
+            </div>
+            <div class="creator">
+                <button class="option_button"
+                        onclick="showPopup('metadata_popup');fromId('metadata_inputs').innerHTML=generateMetaInputs()"><u>F</u>inish
+                    puzzle</button>
+            </div>
+            <div class="player">
+                <button class="option_button" onclick="fullPuzzle.deleteZeroedRows();scene.recreate();">Des<u>t</u>roy
+                    zeroes</button>
+            </div>
+            <div class="solver">
+                <button class="option_button" onclick="solveCurrentPuzzle()">S<u>o</u>lve</button>
+            </div>
         </div>
-        <div class="player">
-            <button class="option_button">Des<u>t</u>roy zeroes</button>
-        </div>
-        <div class="solver">
-            <button class="option_button" onclick="solveCurrentPuzzle()">S<u>o</u>lve</button>
-        </div>
-    </div>
-    <div id="error"></div>
-    <!-- Menus -->
-    <div id="popup_box">
-        <div class="popup_page" id="main_menu" style="display:block">
-            <button onclick="openGameMode('player');" tabindex="2">Play puzzle</button>
-            <button onclick="openGameMode('creator');" tabindex="3">Create puzzle</button>
-            <button onclick="openGameMode('solver');" tabindex="4">Solve puzzle</button>
-            <button onclick="openGameMode('sandbox');" tabindex="5">Sandbox</button>
-            <button onclick="showPopup('guide_popup')" tabindex="6">Guide/Info</button>
-            <button onclick="showPopup('settings')" tabindex="7">Settings</button>
-        </div>
-        <div class="popup_page creator solver" id="puzzle_creator_popup">
-            <button tabindex="1" class="popup_close" onclick="showPopup('main_menu')">&times;</button>
-            <div class="creator sandbox">
+        <div id="error"></div>
+        <!-- Menus -->
+        <div id="popup_box">
+            <div class="popup_page" id="main_menu" style="display:block">
+                <button onclick="openGameMode('player');" tabindex="2">Play</button>
+                <button onclick="openGameMode('creator');" tabindex="3">Create</button>
+                <button onclick="openGameMode('solver');" tabindex="4">Solve</button>
+                <button onclick="window.open('https://benjamin-cates.github.io/picross/guide/guide.html','_blank');" tabindex="7">Guide/Info</button>
+            </div>
+            <div class="popup_page" id="puzzle_creator_popup">
+                <button tabindex="1" class="popup_close" onclick="showPopup('main_menu')">&times;</button>
                 <label for="puzzle_data">Duplicate from text:</label><input type="text" id="puzzle_data"
-                       placeholder="eJxzSizOTFYoKK2qykmtM67z9XCr09YdB" tabindex="101">
+                       placeholder="eJxzSizOTFYoKK2qykmtM67z9XCr09YdB" tabindex="101"
+                       onpaste="window.setTimeout(createPuzzle)">
                 <br><br>
                 OR
                 <br><br>
-                <label for="puzzle_name">Name: </label><input type="text" id="puzzle_name" placeholder="Basic puzzle"
-                       tabindex="102"><br>
-            </div>
-            <label for="puzzle_dimension">Dimension: </label><input type="number" min="1" placeholder="3" max="10"
-                   oninput="updateAxisSizeList(this.value);" id="puzzle_dimension" tabindex="105"><br>
-            Axis size:
-            <ol id="axis_size_list">
-            </ol>
-            <br>
-            <button onclick="createPuzzle()" tabindex="130">Go!</button>
-            <script>
-                function updateAxisSizeList(dim) {
-                    dim = Math.min(dim, 10);
-                    let text = "";
-                    for(let i = 0; i < dim; i++) {
-                        text += "<li><input type='number' min='1' max='32' placeholder='4' tabindex='" + (110 + i) + "'></li>";
-                    }
-                    fromId("axis_size_list").innerHTML = text;
-                }
-                function createPuzzle() {
-                    const errorOutput = fromId("create_puzzle_error");
-                    if(document.getElementById("puzzle_data").value != "") {
-                        try {
-                            fullPuzzle = Puzzle.fromBase64(document.getElementById("puzzle_data").value);
-                        } catch(e) {
-                            printError("Invalid puzzle string");
-                            throw e;
+                <label for="puzzle_dimension">Dimension: </label><input type="number" min="1" placeholder="3" max="10"
+                       oninput="updateAxisSizeList(this.value);" id="puzzle_dimension" tabindex="105"><br>
+                Axis size:
+                <ol id="axis_size_list" onload="updateAxisSizeList(3);">
+                </ol>
+                <br>
+                <button onclick="createPuzzle()" tabindex="130">Go!</button>
+                <script>
+                    function updateAxisSizeList(dim) {
+                        dim = Math.min(dim, 10);
+                        let text = "";
+                        for(let i = 0; i < dim; i++) {
+                            text += "<li><input type='number' min='1' max='32' placeholder='4' tabindex='" + (110 + i) + "'></li>";
                         }
+                        fromId("axis_size_list").innerHTML = text;
                     }
-                    else {
-                        let name = fromId("puzzle_name").value || "Basic Puzzle";
-                        let dimension = Number(fromId("puzzle_dimension").value || 3);
-                        if(dimension > 10 || dimension < 1) {
-                            return printError("Dimension must be from 1-10");
-                        }
-                        let axises = fromId("axis_size_list");
-                        let size = [];
-                        for(let i = 0; i < axises.children.length; i++) {
-                            size[i] = Number(axises.children[i].children[0].value || 4);
-                            if(size[i] < 1 || size[i] > 32) {
-                                return printError("Axis size must be from 1-32");
+                    function createPuzzle() {
+                        const errorOutput = fromId("create_puzzle_error");
+                        if(document.getElementById("puzzle_data").value != "") {
+                            try {
+                                fullPuzzle = Puzzle.fromBase64(document.getElementById("puzzle_data").value);
+                            } catch(e) {
+                                printError("Invalid puzzle string");
+                                throw e;
                             }
                         }
-                        console.log("New puzzle: ", name, dimension, size);
-                        fullPuzzle = new Puzzle(dimension, size, name);
-                        fullPuzzle.shape.fill(3);
-                        fullPuzzle.hintsTotal.fill(0);
-                        fullPuzzle.hintsPieces.fill(0);
-                    }
-                    scene.update();
-                    slicer.create(fullPuzzle);
-                    hide("popup_box");
-                    hide("popup_background");
-                }
-            </script>
-        </div>
-        <div class="popup_page" id="puzzle_data_enteror">
-            <button tabindex="1" class="popup_close" onclick="showPopup('main_menu')">&times;</button>
-            Puzzle data:<br>
-            <input type="text" placeholder="eJxzSizOTFYoKK2qykmtM67z9XCr09YdB" id="puzzle_player_data"
-                   tabindex="101"><br>
-            <button tabindex="102" onclick="loadPlayer()"></button>
-        </div>
-        <div class="popup_page" id="puzzle_difficulty_enteror">
-            <button tabindex="1" class="popup_close" onclick="showPopup('puzzle_data_enteror')">&times;</button>
-            <input type="number" step="0.05" value="0.5" max="1" min="0" id="puzzle_difficulty"
-                   onchange="fromId('estimated_puzzle_time').innerText = solvedPuzzle.fromDifficulty(this.value).estimateTime()">
-            Estimated time: <span id="estimated_puzzle_time"></span>
-            <button tabindex="102" onclick='loadPlayer()'>Start!</button>
-        </div>
-        <div class="popup_page" id="shortcuts_popup">
-            <button tabindex="1" class="popup_close" onclick="hide('popup_box');hide('popup_background')">&times;</button>
-            <div class="sandbox creator player">
-                <p>Underlined characters in the upper-right buttons are their shortcut</p>
-                <h3>Universal</h3>
-                Ctrl+click Destroy block
-                Shift+click Color block
-                WASD Control slicer
-                XYZ Set dimension
-                Escape key Close menu
-                E Exit
-            </div>
-            <div class="player">
-                <h3>Player</h3>
-                T Des<u>t</u>roy Zeroes
-            </div>
-            <div class="sandbox">
-                <h3>Sandbox</h3>
-                Y Cop<u>y</u>
-                P Paste
-            </div>
-            <div class="creator">
-                <h3>Creator</h3>
-                F Finish puzzle
-            </div>
-            <div class="solver">
-                <h3>Solver</h3>
-                0-9 Set hint's total
-                Shift+(1-9) Set hint's pieces
-                + Increase hint total
-                - Decrease hint total
-                [ Increase hint pieces
-                ] Decrease hint pieces
-                O S<u>o</u>lve
-            </div>
-        </div>
-        <div class="popup_page" id="metadata_popup">
-            <button tabindex="1" class="popup_close" onclick="hide('popup_box');hide('popup_background')">&times;</button>
-            <label for="puzzle_name">Name: </label><input id="puzzle_name"
-                   onchange="fullPuzzle.metadata.name=this.value"><br>
-            <label for="puzzle_background">Background: </label><input id="puzzle_url" placeholder="https://"
-                   onchange="fullPuzzle.metadata.background=this.value">
-            <label for="puzzle_color">Paint color: </label><input id="puzzle_color" placeholder="hex or word"
-                   onchange="fullPuzzle.metadata.color=convertColor(this.value);">
-            <button onclick="copyPuzzle()">Copy puzzle</button>
-        </div>
-        <div class="popup_page" id="guide_popup">
-            <button tabindex="1" class="popup_close" onclick="showPopup('main_menu')">&times;</button>
-            <h2>Concept</h2>
-            Each puzzle is composed of a grid of blocks that are split up into rows. Some rows have hints that indicate
-            information about the colored blocks in the row.
-
-            The goal of the game is to start with a complete cube of blocks and carve it down to the hidden shape.
-
-            <h2>Hints</h2>
-            The hint is the symbol on the side of the cube. The number represents the total number of cubes that should
-            be in the final shape. If there is no border around the cube, they are consecutive. A circle around the
-            number indicates that there is a single gap. A square around the number indicates that there are two gaps in
-            the array. If there is a number in the top right corner of the square, that indicates the total number of
-            gaps.
-            <h2>Vocabulary</h2>
-            <ul>
-                <li>Row - Row or a column of cells</li>
-                <li>Hint - Symbol at the end of a row</li>
-                <li>Colored - A cube that is part of the shape</li>
-                <li>Broken - A cube that is not part of the shape</li>
-                <li>Undetermined - Unknown if colored or broken, all cubes start this way</li>
-                <li>Possibility - Possible situation for a row</li>
-                <li>Guaranteed - A cell that is the same in all possibilities.</li>
-                <li>Gap - Run of broken cells between colored or undetermined cells</li>
-            </ul>
-            <h2>Example guide</h2>
-            In each table, the red squares represent colored blocks, empty squares represent broken blocks, and white
-            squares represent unaltered blocks.
-            <h2>Example 1</h2>
-            Given this hint in a 7 cube long row, find all squares that can be determined using this hint.<br>
-            <svg width="50" height="50" class="hintExample">
-                <text x="23" y="40" text-anchor="middle" fill="black" class="hintExampleText">4</text>
-            </svg>
-            <table id="example1" class="cellListTable">
-                <script>window.addEventListener("load", _ => fromId("example1").innerHTML = generateRow(["xxxx   ", " xxxx  ", "  xxxx ", "   xxxx", "       ", "---x---"]))</script>
-            </table>
-            Each row represents a possibility and the final row is what can be determined about the shape.<br>
-
-            <h2>Example 2</h2>
-            <h4>Given</h4>
-            <svg width="50" height="50" class="hintExample">
-                <text x="23" y="40" text-anchor="middle" fill="black" class="hintExampleText">4</text>
-                <circle cx="25" cy="25" r="22" stroke="#000" fill="#00000000" stroke-width="2"></circle>
-            </svg>
-            <table id="example2start" class="cellListTable">
-                <script>window.addEventListener("load", _ => fromId("example2start").innerHTML = generateRow(["xx---"]))</script>
-            </table>
-            <h4>Possibilites</h4>
-            <table id="example2" class="cellListTable">
-                <script>window.addEventListener("load", _ => fromId("example2").innerHTML = generateRow(["xx xx", "xxx x"]))</script>
-            </table>
-            <h4>Solution</h4>
-            <table id="example2poss" class="cellListTable">
-                <script>window.addEventListener("load", _ => fromId("example2poss").innerHTML = generateRow(["xx--x"]))</script>
-            </table>
-            5 total - 4 colored = 1 broken<br>
-            In order to have a gap, the broken cell can not be on the two sides of the row. That means those are
-            guaranteed colored. What we know about the original state of the row, the first two cells are colored in.
-            That leaves the one broken cell in either the 3rd or 4th position; all other cells are colored.
-            <style>
-                .cellListTable {
-                    border-collapse: collapse;
-                }
-
-                .cellList>td {
-                    width: 50px;
-                    height: 50px;
-                    border: 1px solid #000;
-                }
-
-                .cellList>td.c {
-                    background: #FF0000;
-                }
-
-                .cellList>td.u {
-                    background: #FFF;
-                }
-
-                .hintExampleText {
-                    font-size: 40px;
-                    font-family: Consolas;
-                    text-align: center;
-                    vertical-align: center;
-                }
-
-                .hintExample {
-                    border: 1px solid #000;
-                }
-            </style>
-            <script>
-                function generateRow(rows) {
-                    let html = "";
-                    for(let i = 0; i < rows.length; i++) {
-                        html += "<tr class='cellList'>";
-                        let char;
-                        for(let x = 0; x < rows[i].length; x++) {
-                            char = rows[i].charAt(x);
-                            html += (char == "x" ? "<td class='c'></td>" : (char == "-" ? "<td class='u'></td>" : "<td></td>"));
+                        else {
+                            let dimension = Number(fromId("puzzle_dimension").value || 3);
+                            if(dimension > 10 || dimension < 1) {
+                                return printError("Dimension must be from 1-10");
+                            }
+                            let axises = fromId("axis_size_list");
+                            let size = [];
+                            for(let i = 0; i < axises.children.length; i++) {
+                                size[i] = Number(axises.children[i].children[0].value || 4);
+                                if(size[i] < 1 || size[i] > 32) {
+                                    return printError("Axis size must be from 1-32");
+                                }
+                            }
+                            console.log("New puzzle: ", name, dimension, size);
+                            fullPuzzle = new Puzzle(dimension, size, name);
+                            fullPuzzle.shape.fill(3);
+                            fullPuzzle.hintsTotal.fill(0);
+                            fullPuzzle.hintsPieces.fill(0);
                         }
-                        html += "</tr>";
+                        scene.recreate(true);
+                        slicer.create(fullPuzzle);
+                        hide("popup_box");
+                        hide("popup_background");
                     }
-                    return html;
+                </script>
+            </div>
+            <div class="popup_page" id="puzzle_data_enteror">
+                <button tabindex="1" class="popup_close" onclick="showPopup('main_menu')">&times;</button>
+                Puzzle data:<br>
+                <input type="text" placeholder="eJxzSizOTFYoKK2qykmtM67z9XCr09YdB" id="puzzle_player_data"
+                       tabindex="101" onpaste="window.setTimeout(loadPlayer)"><br>
+
+                <button tabindex="102" onclick="loadPlayer()">Continue</button>
+            </div>
+            <div class="popup_page" id="puzzle_difficulty_enteror">
+                <button tabindex="1" class="popup_close" onclick="showPopup('puzzle_data_enteror')">&times;</button>
+                <input type="number" step="0.05" value="0.40" max="1" min="0" id="puzzle_difficulty"
+                       onchange="fromId('estimated_puzzle_time').innerText = timeText(solvedPuzzle.fromDifficulty(this.value).estimateTime())">
+                Estimated time: <span id="estimated_puzzle_time"></span>
+                <button tabindex="102"
+                        onclick="fullPuzzle=solvedPuzzle.fromDifficulty(fromId('puzzle_difficulty').value);scene.recreate(true);hide('popup_box');hide('popup_background')">Start!</button>
+                <script>
+                    function timeText(time) {
+                        let out = "";
+                        time = Math.round(time);
+                        out += (time % 60) + "s";
+                        time = Math.floor(time / 60);
+                        if(time != 0) {
+                            out = (time % 60) + "m " + out;
+                            time = Math.floor(time / 60);
+                        }
+                        if(time != 0) out = time + "h " + out;
+                        return out;
+                    }
+                </script>
+            </div>
+            <div class="popup_page" id="shortcuts_popup">
+                <button tabindex="1" class="popup_close"
+                        onclick="hide('popup_box');hide('popup_background')">&times;</button>
+                <div class="sandbox creator player">
+                    <p>Underlined characters in the upper-right buttons are their shortcut</p>
+                    <h3>Universal</h3>
+                    Ctrl+click Destroy block
+                    Shift+click Color block
+                    WASD Control slicer
+                    XYZ Set dimension
+                    Escape key Close menu
+                    E Exit
+                </div>
+                <div class="player">
+                    <h3>Player</h3>
+                    T Des<u>t</u>roy Zeroes
+                </div>
+                <div class="sandbox">
+                    <h3>Sandbox</h3>
+                    Y Cop<u>y</u>
+                    P Paste
+                </div>
+                <div class="creator">
+                    <h3>Creator</h3>
+                    F Finish puzzle
+                </div>
+                <div class="solver">
+                    <h3>Solver</h3>
+                    0-9 Set hint's total
+                    Shift+(1-9) Set hint's pieces
+                    + Increase hint total
+                    - Decrease hint total
+                    [ Increase hint pieces
+                    ] Decrease hint pieces
+                    O S<u>o</u>lve
+                </div>
+            </div>
+            <div class="popup_page" id="metadata_popup">
+                <button tabindex="1" class="popup_close"
+                        onclick="hide('popup_box');hide('popup_background')">&times;</button>
+                <div id="metadata_inputs">
+                </div>
+                <button onclick="copyPuzzle()">Copy puzzle</button>
+            </div>
+            <div class="popup_page" id="settings">
+                <button tabindex="1" class="popup_close" onclick="showPopup('main_menu')">&times;</button>
+
+            </div>
+            <script>
+                function showPopup(id) {
+                    hideAll("popup_page");
+                    show(id);
+                    show("popup_background");
+                    show("popup_box");
                 }
 
             </script>
-
         </div>
-        <div class="popup_page" id="settings">
-            <button tabindex="1" class="popup_close" onclick="showPopup('main_menu')">&times;</button>
-
-        </div>
-        <script>
-            function showPopup(id) {
-                hideAll("popup_page");
-                show(id);
-                show("popup_background");
-                show("popup_box");
-            }
-
-        </script>
-    </div>
-    <div id="popup_background"></div>
-    <div style="display:none" id="clipboard"> </div>
-
+        <div id="popup_background"></div>
+        <div style="display:none" id="clipboard"> </div>
+        <canvas id="canvas"></canvas>
+    </body>
 </html>
