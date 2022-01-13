@@ -5,8 +5,8 @@ const cell_colored = 2;
 const cell_unsure = 3;
 window.Puzzle = Puzzle;
 window.THREE = THREE;
-window.puzzle = new Puzzle(3, [12, 7, 5]);
-window.fullPuzzle = Puzzle.fromBase64('eJwzrvP1cKvT1h0Fgx3UOcKBExA4A4G7k7uTMxA6OYFE3Z28nNyc3ZyxySH0gWhnJDEEcHbyAOsAQVcnhB4QzxkOQaaD+LjU4zYfKO6MycIn7uKEgLjEIQDkTnRVMP+6OLk5oYtCwsHVGV29o2N1LQBBAKlv');
+window.puzzle = null;
+window.fullPuzzle = null;
 window.solvedPuzzle = null;
 window.scene = {
     camera: null,
@@ -323,12 +323,12 @@ window.input = {
         }
     },
     onload: function () {
+        puzzle = new Puzzle(1, [1]);
+        fullPuzzle = new Puzzle(1, [1]);
         input.doRender = true;
         input.addListeners();
         scene.createBasics();
         scene.viewportResize();
-        slicer.create(puzzle);
-        scene.recreate();
         scene.render();
         input.getURLParameters();
         input.URLParametersLoad();
