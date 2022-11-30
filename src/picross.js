@@ -1,24 +1,34 @@
+// Import Pako for binary compression
 import * as Pako from "../lib/pako.js";
 window.Pako = Pako;
+//Puzzle also has other methods below this definition
 export class Puzzle {
     //Constructors
     constructor(dimension = 0, size = []) {
+        //Number of dimensions of the puzzle
         this.dimension = dimension;
+        //Array with the length in each dimension
         this.size = size.slice();
         this.calculateSizes();
+        //List of blocks
         this.shape = new Array(this.shapeSize);
+        //List of hints, which is the maximum face size multiplied by the dimension
         this.hintsTotal = new Array(this.maxFaceSize * dimension);
         this.hintsPieces = new Array(this.maxFaceSize * dimension);
+        //Metadata like name, color...
         this.metadata = {};
     }
     calculateSizes() {
+        //Computer total size of shape
         this.shapeSize = 1;
         let minimumRowLength = 10000;
         for(let i = 0; i < this.dimension; i++) {
             this.shapeSize *= this.size[i];
             minimumRowLength = Math.min(minimumRowLength, this.size[i]);
         }
+        //Max face size is the total size divided by the smallest row.
         this.maxFaceSize = this.shapeSize / minimumRowLength;
+        //Spacing is a cumulative size metric. If this.size=[4,3,2], this.spacing=[1,4,12]
         this.spacing = [];
         let spacing = 1;
         for(let i = 0; i < this.dimension + 1; i++) {
@@ -28,32 +38,41 @@ export class Puzzle {
     }
 }
 //Positional retrieval functions
+//Turns position vector into an index
 Puzzle.prototype.collapsePos = function (position) {
+    //Multiply each position component by its spacing and take the sum
     return position.map((p, i) => p * this.spacing[i]).reduce((a, b) => a + b);
 }
+//Splices a row from a starting position index and a direction
 Puzzle.prototype.getRow = function (pos, dim) {
     let out = [];
     let spacing = this.spacing[dim];
+    //Start is the position at the beginning of the row
     let start = pos % spacing + Math.floor(pos / this.spacing[dim + 1]) * this.spacing[dim + 1];
     for(let i = 0; i < this.size[dim]; i++) {
         out[i] = this.shape[start + spacing * i];
     }
     return out;
 }
+//Convert a position and direction into a hint position in the hint array
 Puzzle.prototype.getHintPosition = function (positionIndex, direction) {
     let below = positionIndex % this.spacing[direction];
     let above = Math.floor(positionIndex / this.spacing[direction + 1]) * this.spacing[direction];
     return this.maxFaceSize * direction + below + above;
 }
+//Converts multidimensional position index into 3d position index where dims is the slicer state
 Puzzle.prototype.unslicePosition = function (pos, dims) {
     let size = [];
     for(let i in [0, 1, 2]) size[i] = this.size[dims.indexOf(-1 - i)] || 1;
     let posArray = dims.slice();
+    //Set x,y, and z of the output array
     posArray[dims.indexOf(-1)] = pos % size[0];
     posArray[dims.indexOf(-2)] = Math.floor(pos / size[0]) % size[1];
     posArray[dims.indexOf(-3)] = Math.floor(pos / size[0] / size[1]) % size[2];
+    //Collapse to 3d position
     return this.collapsePos(posArray);
 }
+//Converts position index into position vector
 Puzzle.prototype.getXYZ = function (position) {
     let out = [];
     for(let i = 0; i < this.dimension; i++) {
@@ -62,13 +81,17 @@ Puzzle.prototype.getXYZ = function (position) {
     return out;
 }
 //Extra data generation
+//Generate all hints for the entire puzzle (puzzle should not have indetermined pieces)
 Puzzle.prototype.generateHints = function () {
+    //Reset hint arrays
     this.hintsPieces = new Array(this.maxFaceSize * this.dimension);
     this.hintsPieces.fill(0, 0, this.hintsPieces.length);
     this.hintsTotal = new Array(this.maxFaceSize * this.dimension);
     this.hintsTotal.fill(0, 0, this.hintsTotal.length);
+    //Iterate through each hint
     this.foreachHint((cell, t, p, dim, i) => {
         let row = this.getRow(cell, dim);
+        //Count total and how many pieces its in
         let total = 0, pieces = 0, prev = cell_broken;
         for(let x = 0; x < row.length; x++) {
             if(row[x] == cell_colored) {
@@ -82,6 +105,7 @@ Puzzle.prototype.generateHints = function () {
         this.hintsTotal[i + this.maxFaceSize * dim] = total;
     });
 }
+//Generate visible sides of a 3d puzzle
 Puzzle.prototype.generateSidesVisible = function () {
     this.visibleSides = [];
     let spacing = [1, this.size[0], this.size[0] * this.size[1]];
@@ -97,6 +121,7 @@ Puzzle.prototype.generateSidesVisible = function () {
         this.visibleSides[i] = visible;
     });
 }
+//Create a new puzzle from a puzzle and a slicer state
 Puzzle.prototype.sliceFrom = function (dims, puz) {
     //Find x, y, and z axis
     this.size = [];
@@ -113,6 +138,7 @@ Puzzle.prototype.sliceFrom = function (dims, puz) {
         for(let i in [0, 1, 2]) oldPos[dims.indexOf(-1 - i)] = pos[i];
         this.shape[i] = puz.shape[puz.collapsePos(oldPos)];
     });
+    //Copy hints
     this.foreachHint((cell, total, pieces, dim, i) => {
         let hintPos = i + dim * this.maxFaceSize;
         if(dims.indexOf(-1 - dim) == -1) {
@@ -133,6 +159,7 @@ Puzzle.prototype.sliceFrom = function (dims, puz) {
         this.hintsPieces[hintPos] = puz.hintsPieces[oldHintPosition];
     });
 }
+//Intersect start and velocity vector with the first solid cube
 Puzzle.prototype.rayIntersect = function (start, vel) {
     let velocityMagnitude = Math.sqrt(vel[0] * vel[0] + vel[1] * vel[1] + vel[2] * vel[2]);
     //Setup starting variables
@@ -163,6 +190,7 @@ Puzzle.prototype.rayIntersect = function (start, vel) {
     }
     return {pos: -1, face: -1};
 }
+//Generate a new puzzle with certain hints missing based on a linear difficulty scale
 Puzzle.prototype.fromDifficulty = function (difficulty) {
     //Random number generator seeded with a
     function mulberry32(a) {
@@ -180,6 +208,7 @@ Puzzle.prototype.fromDifficulty = function (difficulty) {
     });
     return out;
 }
+//Estimate time to solve puzzle
 Puzzle.prototype.estimateTime = function() {
     Module.setPuzzle(this.toString());
     return Module.solve();
@@ -198,6 +227,7 @@ Puzzle.prototype.foreachCell = function (func) {
         }
     }
 }
+//Iterate over each hint and run func(cell,total,pieces,dimension,index)
 Puzzle.prototype.foreachHint = function (func) {
     for(let dim = 0; dim < this.dimension; dim++) {
         for(let i = 0; i < this.shapeSize / this.size[dim]; i++) {
@@ -208,6 +238,7 @@ Puzzle.prototype.foreachHint = function (func) {
     }
 }
 //Utility Functions
+//Delete all rows that have a zero for a hint
 Puzzle.prototype.deleteZeroedRows = function () {
     this.foreachHint((cell, total, pieces, dim) => {
         if(total == 0 && pieces == 1) {
@@ -238,6 +269,7 @@ Puzzle.prototype.toString = function () {
     out += "~" + JSON.stringify(this.metadata);
     return out;
 }
+//Not sure what this is supposed to be for
 Puzzle.prototype.toUintArray = function () {
     let meta = JSON.stringify(this.metadata);
     let length = 16;
@@ -279,11 +311,13 @@ Puzzle.prototype.toUintArray = function () {
     console.log(pos);
     return out;
 }
+//Convert puzzle to a base64 string that can be shared
 Puzzle.prototype.toBase64 = function () {
     let string = this.toString();
     return btoa(String.fromCharCode.apply(null, Pako.deflate(string)));
 }
 //Import functions
+//Create puzzle from raw string
 Puzzle.fromString = function (str) {
     const A = 'A'.charCodeAt(0);
     let strs = str.split("~");
@@ -309,8 +343,8 @@ Puzzle.fromString = function (str) {
     }
     puz.metadata = JSON.parse(strs[4] || "{}");
     return puz;
-
 }
+//Create puzzle from base64
 Puzzle.fromBase64 = function (str) {
     let unencoded = atob(str);
     let data = new Uint8Array(unencoded.length);

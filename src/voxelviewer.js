@@ -5,8 +5,11 @@ const cell_colored = 2;
 const cell_unsure = 3;
 window.Puzzle = Puzzle;
 window.THREE = THREE;
+//Holds the currently viewed puzzle (3d slice)
 window.puzzle = null;
+//Holds the full puzzle that is cut down to the 3d puzzle
 window.fullPuzzle = null;
+//Holds the entire solved puzzle
 window.solvedPuzzle = null;
 window.scene = {
     camera: null,
@@ -37,6 +40,7 @@ window.scene = {
             input.doRender = false;
         }
     },
+    //Resize renderer viewport
     viewportResize: function () {
         //Compute camera variables
         let frustumSize = 10;
@@ -57,6 +61,7 @@ window.scene = {
         scene.canvas.style.width = window.innerWidth + "px";
         scene.canvas.style.height = window.innerHeight + "px";
     },
+    //Create camera, scecne, renderer, lighting, and selectors
     createBasics: function () {
         scene.canvas = fromId("canvas");
         //Camera, scene, and renderer
@@ -85,6 +90,7 @@ window.scene = {
         //scene.obj.add(scene.debug.cursorIndicator);
         input.doRender = true;
     },
+    //Update a single voxel at position with newType
     updateVoxel: function (position, newType) {
         let old = puzzle.shape[position];
         if(old == newType) return;
@@ -102,6 +108,7 @@ window.scene = {
             scene.update();
         }
     },
+    //Update entire puzzle
     updateVoxels: function () {
         scene.destroyObjects(scene.voxels);
         puzzle.generateSidesVisible();
@@ -132,6 +139,7 @@ window.scene = {
         scene.updateVoxels();
         scene.update();
     },
+    //Create a mesh for a single position
     createVoxelMesh: function (x, y, z, position) {
         let cell = puzzle.shape[position];
         let materials = [];
@@ -148,6 +156,7 @@ window.scene = {
         mesh.add(new THREE.LineSegments(scene.geometry.wire, scene.materials.wire));
         return mesh;
     },
+    //
     getVoxelTexture: function (hint, hintPieces, cellType) {
         if(cellType != 2 && cellType != 3) return scene.materials.unsure;
         let type = ["", "", "painted", "unsure"][cellType];
@@ -159,6 +168,7 @@ window.scene = {
         }
         return scene.materials.text[type][hint];
     },
+    //Create a texture for a specific number
     getTextTexture: function (num) {
         let context = document.getElementById("textRender").getContext("2d");
         context.clearRect(0, 0, 50, 50);
@@ -175,6 +185,7 @@ window.scene = {
         texture.anisotropy = 16;
         return texture;
     },
+    //
     update: function () {
         let visibleSideMap = (scene.camera.position.x > 0 ? 2 : 1) + (scene.camera.position.y > 0 ? 2 : 1) * 4 + (scene.camera.position.z > 0 ? 2 : 1) * 16;
         puzzle.foreachCell((cell, i, pos) => {
@@ -211,6 +222,7 @@ window.scene = {
         }
         input.doRender = true;
     },
+    //Destroy object or array of objects
     destroyObjects: function (object) {
         if(typeof object != "object") return;
         else if(object instanceof THREE.Mesh || object instanceof THREE.Line) this.obj.remove(object);
@@ -221,6 +233,7 @@ window.scene = {
     setBackground: function () {
         document.body.style.backgroundImage = "url('" + fullPuzzle.metadata.background + "')";
     },
+    //Set paint color to the one in the metadata
     setPaintColor: function () {
         let col = convertColor(fullPuzzle.metadata.color);
         let para = {color: null, roughness: NaN, metalness: NaN};
@@ -333,6 +346,7 @@ window.input = {
         input.getURLParameters();
         input.URLParametersLoad();
     },
+    //Event for clicking
     cubeClick: function () {
         let e = input.latestEvent;
         let cursorPos = input.getCursorPosition();
@@ -352,6 +366,7 @@ window.input = {
                 scene.updateVoxel(intersection.pos, cell_broken);
             }
             if(e.shiftKey) {
+                //Swap colored and not colored
                 if(input.setType == -1) input.setType = [0, 1, 3, 2][current];
                 scene.updateVoxel(intersection.pos, input.setType);
             }
@@ -372,6 +387,7 @@ window.input = {
     doRender: true,
     boxSize: 0,
     url: {},
+    //Update selected face if it was clicked
     updateSelectedFace: function () {
         if(input.latestEvent.shiftKey || input.latestEvent.ctrlKey) {
             let cursorPos = input.getCursorPosition();
@@ -396,6 +412,7 @@ window.input = {
             input.selectedBlock = -1;
         }
     },
+    //Change rotation and update visible cubes
     updateRotation: function () {
         let oldVisibleSideMap = (scene.camera.position.x > 0 ? 2 : 1) + (scene.camera.position.y > 0 ? 2 : 1) * 4 + (scene.camera.position.z > 0 ? 2 : 1) * 16;
         const mouseSpeed = 0.006;

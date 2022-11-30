@@ -216,6 +216,7 @@ public:
             pos /= size[i];
         }
     }
+    //Convert to raw string
     string toString() {
         // DIMENSION~SIZE~SHAPE~HINTS
         string out = std::to_string(dimension) + "~";
