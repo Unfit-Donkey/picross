@@ -353,8 +353,10 @@ window.input = {
         let direction = new THREE.Vector3(0, 0, 0).copy(scene.camera.position).multiplyScalar(-1).normalize();
         let intersection = puzzle.rayIntersect(cursorPos, direction.toArray());
         if(intersection.pos != -1) {
-            console.log(e.type);
-            if(input.prevVoxel.face != intersection.face && input.prevVoxel.face != -1 && e.type != "mousedown" && e.type != "touchstart") return;
+            let dir = Math.floor(input.prevVoxel.face / 2);
+            if(e.type != "mousedown" && e.type != "touchstart" && (
+                (input.prevVoxel.face != intersection.face && input.prevVoxel.face != -1) ||
+                Math.floor(input.prevVoxel.pos / puzzle.spacing[dir]) % puzzle.size[dir] != Math.floor(intersection.pos / puzzle.spacing[dir]) % puzzle.size[dir])) return;
             if(slicer.minorAxis != -1) {
                 //Prevent from unfocused cubes
                 if(slicer.slices[slicer.minorAxis] != Math.floor(intersection.pos / puzzle.spacing[slicer.minorDirection]) % puzzle.size[slicer.minorDirection]) return;
