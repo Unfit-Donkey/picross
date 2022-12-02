@@ -1,45 +1,16 @@
 let gameMode = "mainMenu";
-function showOne(list, id) {
-    let els = document.getElementsByClassName(list);
-    for(let i = 0; i < els.length; i++) els[i].style.display = "none";
-    fromId(id).style.display = "block";
-}
-function show(id) {
-    fromId(id).style.display = "block";
-}
-function showPopup(id) {
+function showMenu(id) {
     if(id == "none") {
-        hide("popup_background");
-        hide("popup_box");
+        $("#main_menu").hide();
         return;
     }
-    hideAll("popup_page");
-    show(id);
-    show("popup_background");
-    show("popup_box");
-}
-
-function hideAll(classId) {
-    let list = Array.from(document.getElementsByClassName(classId));
-    for(let i in list) list[i].style.display = "none";
-}
-function showAll(classId) {
-    let list = Array.from(document.getElementsByClassName(classId));
-    for(let i in list) list[i].style.display = "block";
-}
-function hide(id) {
-    fromId(id).style.display = "none";
-}
-function fromId(i) {
-    return document.getElementById(i);
-}
-function fromClass(i) {
-    return document.getElementsByClassName(i);
+    $(".menu_page").hide();
+    $("#" + id).show();
+    $("#main_menu").show();
 }
 function convertColor(n) {
-    let el = document.getElementById("clipboard");
-    el.style.background = n;
-    return window.getComputedStyle(el).backgroundColor;
+    $("#textRender").css("background", n);
+    return window.getComputedStyle($("#textRender")[0]).backgroundColor;
 }
 window.PuzzleMeta = [
     {name: "color", placeholder: "hex or word", default: "rgb(187,255,153)", onchange: _ => scene.setPaintColor()},
@@ -84,10 +55,10 @@ function openGameMode(type) {
     let types = ["player", "creator", "solver"];
     if(!types.includes(type)) return printError(type + " is not a valid game mode");
     gameMode = type;
-    let firstPage = ["puzzle_data_enteror", "puzzle_creator_popup", "puzzle_creator_popup"];
-    for(let i in types) hideAll(types[i]);
-    showAll(type);
-    showPopup(firstPage[types.indexOf(type)]);
+    let firstPage = ["puzzle_data_enteror", "puzzle_creator", "puzzle_creator"];
+    for(let i in types) $('.' + types[i]).hide();
+    $("." + type).show();
+    showMenu(firstPage[types.indexOf(type)]);
     updateAxisSizeList(3);
 }
 function updateAxisSizeList(dim) {
@@ -96,24 +67,23 @@ function updateAxisSizeList(dim) {
     for(let i = 0; i < dim; i++) {
         text += "<li><input type='number' min='1' max='32' placeholder='4' tabindex='" + (110 + i) + "'></li>";
     }
-    fromId("axis_size_list").innerHTML = text;
+    $("#axis_size_list").html(text);
 }
 function createPuzzle() {
-    const errorOutput = fromId("create_puzzle_error");
-    if(document.getElementById("puzzle_data").value != "") {
+    if((data = $("#puzzle_data").val()) != "") {
         try {
-            fullPuzzle = Puzzle.fromBase64(document.getElementById("puzzle_data").value);
+            fullPuzzle = Puzzle.fromBase64(data);
         } catch(e) {
             printError("Invalid puzzle string");
             throw e;
         }
     }
     else {
-        let dimension = Number(fromId("puzzle_dimension").value || 3);
+        let dimension = Number($("#puzzle_dimension").val() || 3);
         if(dimension > 10 || dimension < 1) {
             return printError("Dimension must be from 1-10");
         }
-        let axises = fromId("axis_size_list");
+        let axises = $("#axis_size_list")[0];
         let size = [];
         for(let i = 0; i < axises.children.length; i++) {
             size[i] = Number(axises.children[i].children[0].value || 4);
@@ -123,35 +93,25 @@ function createPuzzle() {
         }
         console.log("New puzzle: ", name, dimension, size);
         fullPuzzle = new Puzzle(dimension, size, name);
-        fullPuzzle.shape.fill(3);
+        fullPuzzle.shape.fill(cell_unsure);
         fullPuzzle.hintsTotal.fill(0);
         fullPuzzle.hintsPieces.fill(0);
     }
     scene.recreate(true);
     slicer.create(fullPuzzle);
-    hide("popup_box");
-    hide("popup_background");
+    $("#main_menu").hide();
 }
 function timeText(time) {
-    let out = "";
     time = Math.round(time);
-    out += (time % 60) + "s";
-    time = Math.floor(time / 60);
-    if(time != 0) {
-        out = (time % 60) + "m " + out;
-        time = Math.floor(time / 60);
-    }
-    if(time != 0) out = time + "h " + out;
-    return out;
+    return (time > 3600 ? Math.floor(time / 3600) + "h " : "") +//Hours
+        (time > 60 ? (Math.floor(time / 60) % 60) + "m " : "") +//Minutes
+        time % 60 + "s";//Seconds
 }
 function printError(message) {
-    let error = fromId("error");
-    error.innerHTML = message;
-    error.style.transition = "none";
-    error.style.opacity = "1";
+    $("#error").html(message);
+    $("#error").css({"transition": "none", "opacity": "1"});
     error.offsetHeight;
-    error.style.transition = "opacity 1s ease 2s";
-    error.style.opacity = "0";
+    $("#error").css({"transition": "opacity 1s ease 2s", "opacity": "0"});
 }
 const keyboardCommands = [
     {key: "p", func: pastePuzzle, type: "sandbox"},
@@ -161,15 +121,16 @@ const keyboardCommands = [
     {key: "a", func: _ => slicer.update(slicer.focusedSlice, null, "inc")},
     {key: "w", func: _ => slicer.update(slicer.focusedSlice - 1)},
     {key: "s", func: _ => slicer.update(slicer.focusedSlice + 1)},
-    {key: "escape", allowInMenu: true, func: _ => {if(fromId('main_menu').style.display == "none") {hide("popup_box"); hide("popup_background");} }},
-    {key: "e", func: _ => {showPopup("main_menu");}},
+    {key: "escape", allowInMenu: true, func: _ => $('#main_menu').hide()},
+    {key: "e", func: _ => {showMenu("main");}},
 ];
 onkeydown = function (e) {
+    if(!input) return;
     input.latestEvent = e;
     input.pmouseX = input.mouseX;
     input.pmouseY = input.mouseY;
     let key = e.key.toLowerCase();
-    let isInMenu = fromId('popup_box').style.display != "none";
+    let isInMenu = $('#main_menu').css("display") != "none";
     for(let i = 0; i < keyboardCommands.length; i++) {
         if(isInMenu && keyboardCommands[i].allowInMenu != true) continue;
         if(key == keyboardCommands[i].key) keyboardCommands[i].func();
@@ -186,7 +147,7 @@ onkeydown = function (e) {
     }
 }
 onkeyup = function (e) {
-    input.latestEvent = e;
+    if(input) input.latestEvent = e;
 }
 function solveCurrentPuzzle() {
     Module.setPuzzle(fullPuzzle.toString());
@@ -199,12 +160,10 @@ function getSolveTime(puzzle) {
     return Module.solve();
 }
 function copyPuzzle() {
-    let clipboard = document.getElementById("clipboard");
-    clipboard.innerText = fullPuzzle.toBase64();
     navigator.clipboard.writeText(fullPuzzle.toBase64());
 }
 function pastePuzzle() {
-    let str = navigator.clipboard.readText().then(str => {
+    navigator.clipboard.readText().then(str => {
         try {
             fullPuzzle = Puzzle.fromBase64(str);
             scene.recreate(true);
@@ -212,21 +171,13 @@ function pastePuzzle() {
         catch(e) {
             printError("Invalid puzzle");
             console.log(e);
-
         }
     });
 }
-function newPuzzle() {
-    showOne("popup_page", "puzzle_creator_popup");
-    show("popup_box");
-    show("popup_background");
-    updateAxisSizeList(3);
-}
 function loadPlayer() {
-    let data = fromId("puzzle_player_data").value;
+    let data = $("#puzzle_player_data").val();
     try {
         solvedPuzzle = Puzzle.fromBase64(data);
-        showOne("popup_page", "puzzle_difficulty_enteror");
     }
     catch(e) {
         printError("Invalid puzzle");

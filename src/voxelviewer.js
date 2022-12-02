@@ -63,7 +63,7 @@ window.scene = {
     },
     //Create camera, scecne, renderer, lighting, and selectors
     createBasics: function () {
-        scene.canvas = fromId("canvas");
+        scene.canvas = $("#canvas")[0];
         //Camera, scene, and renderer
         scene.renderer = new THREE.WebGLRenderer({antialias: true, alpha: true, canvas: scene.canvas});
         scene.renderer.setClearColor(0x000000, 0);
@@ -138,6 +138,7 @@ window.scene = {
         puzzle.sliceFrom(renderedSlices, fullPuzzle);
         scene.updateVoxels();
         scene.update();
+        input.updateRotation();
     },
     //Create a mesh for a single position
     createVoxelMesh: function (x, y, z, position) {
@@ -170,7 +171,7 @@ window.scene = {
     },
     //Create a texture for a specific number
     getTextTexture: function (num) {
-        let context = document.getElementById("textRender").getContext("2d");
+        let context = $("#textRender")[0].getContext("2d");
         context.clearRect(0, 0, 50, 50);
         context.font = "40px Consolas";
         context.fillStyle = "black";
@@ -296,7 +297,6 @@ window.input = {
         input.latestEvent = e;
         if(slicer.active) return slicer.drag();
         if(e.buttons & 1 == 1 || e.type == "touchmove") {
-            if(fromId("popup_background").style.display != 'none') return;
             if(e.ctrlKey || e.shiftKey) {
                 input.cubeClick();
             }
@@ -331,8 +331,7 @@ window.input = {
             openGameMode("player");
             fullPuzzle = solvedPuzzle.fromDifficulty(Number(input.url.difficulty));
             scene.recreate(true);
-            hide('popup_box');
-            hide('popup_background')
+            $("#main_menu").hide();
         }
     },
     onload: function () {
@@ -465,7 +464,7 @@ window.slicer = {
     selected: 0,
     create: function (puzzle) {
         this.slices = new Array(fullPuzzle.dimension);
-        this.element = fromId("slicer");
+        this.element = $("#slicer")[0];
         this.element.innerHTML = "";
         this.minorAxis = -1;
         this.maxes = puzzle.size.slice();
@@ -645,14 +644,14 @@ window.slicer = {
     },
     updateDisplay: function (layer) {
         //Update display
-        if(this.slices[layer] < 0) fromClass("slicer_display")[layer].innerText = "xyz".charAt(-1 - this.slices[layer]);
-        else fromClass("slicer_display")[layer].innerText = this.slices[layer] + 1;
+        if(this.slices[layer] < 0) $(".slicer_display")[layer].innerText = "xyz".charAt(-1 - this.slices[layer]);
+        else $(".slicer_display")[layer].innerText = this.slices[layer] + 1;
         //Update focused Layer
         if(this.focusedSlice != layer) {
             this.focusedSlice = layer;
-            if(fromClass("focused_layer").length != 0) fromClass("focused_layer")[0].classList.remove("focused_layer");
-            fromClass("slicer_layer")[layer].classList.add("focused_layer");
+            $(".focused_layer").removeClass("focused_layer");
+            $(".slicer_layer")[layer].classList.add("focused_layer");
         }
     },
 };
-window.addEventListener("load", input.onload);
+$(document).ready(input.onload);

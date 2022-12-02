@@ -4,6 +4,7 @@
 
 
     <head>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
         <script src="src/compiled/picrossCpp.js" defer></script>
         <script src="src/voxelviewer.js" type="module"></script>
         <script src="src/documentManager.js"></script>
@@ -21,8 +22,8 @@
         <div class="option_buttons_holder" id="puzzle_viewer">
             <button class="option_button"
                     onclick="window.open('https://benjamin-cates.github.io/picross/guide')">Help</button>
-            <button class="option_button" onclick="showPopup('shortcuts_popup')">Shortcuts</button>
-            <button class="option_button" onclick="showPopup('main_menu')"><u>E</u>xit</button>
+            <button class="option_button" onclick="showMenu('shortcuts')">Shortcuts</button>
+            <button class="option_button" onclick="showMenu('main')"><u>E</u>xit</button>
 
             <div class="sandbox">
                 <button class="option_button" onclick="copyPuzzle()">Cop<u>y</u></button>
@@ -30,7 +31,7 @@
             </div>
             <div class="creator">
                 <button class="option_button"
-                        onclick="showPopup('metadata_popup');fromId('metadata_inputs').innerHTML=generateMetaInputs()"><u>F</u>inish
+                        onclick="showMenu('metadata');$('#metadata_inputs').html(generateMetaInputs());"><u>F</u>inish
                     puzzle</button>
             </div>
             <div class="player">
@@ -43,16 +44,16 @@
         </div>
         <div id="error"></div>
         <!-- Menus -->
-        <div id="popup_box">
-            <div class="popup_page" id="main_menu" style="display:block">
+        <div id="main_menu">
+            <div class="menu_page" id="main" style="display:block">
                 <button onclick="openGameMode('player');" tabindex="2">Play</button>
                 <button onclick="openGameMode('creator');" tabindex="3">Create</button>
                 <button onclick="openGameMode('solver');" tabindex="4">Solve</button>
                 <button onclick="window.open('https://benjamin-cates.github.io/picross/guide','_blank');"
                         tabindex="7">Guide/Info</button>
             </div>
-            <div class="popup_page" id="puzzle_creator_popup">
-                <button tabindex="1" class="popup_close" onclick="showPopup('main_menu')">&times;</button>
+            <div class="menu_page" id="puzzle_creator">
+                <button tabindex="1" class="menu_close" onclick="showMenu('main')">&times;</button>
                 <label for="puzzle_data">Duplicate from text:</label><input type="text" id="puzzle_data"
                        placeholder="eJxzSizOTFYoKK2qykmtM67z9XCr09YdB" tabindex="101"
                        onpaste="window.setTimeout(createPuzzle)">
@@ -67,24 +68,27 @@
                 <br>
                 <button onclick="createPuzzle()" tabindex="130">Go!</button>
             </div>
-            <div class="popup_page" id="puzzle_data_enteror">
-                <button tabindex="1" class="popup_close" onclick="showPopup('main_menu')">&times;</button>
+            <div class="menu_page" id="puzzle_data_enteror">
+                <button tabindex="1" class="menu_close" onclick="showMenu('main')">&times;</button>
                 Puzzle data:<br>
                 <input type="text" placeholder="eJxzSizOTFYoKK2qykmtM67z9XCr09YdB" id="puzzle_player_data"
                        tabindex="101" onpaste="window.setTimeout(loadPlayer)"><br>
 
                 <button tabindex="102" onclick="loadPlayer()">Continue</button>
             </div>
-            <div class="popup_page" id="puzzle_difficulty_enteror">
-                <button tabindex="1" class="popup_close" onclick="showPopup('puzzle_data_enteror')">&times;</button>
+            <div class="menu_page" id="puzzle_difficulty_enteror">
+                <button tabindex="1" class="menu_close" onclick="showMenu('puzzle_data_enteror')">&times;</button>
                 <input type="number" step="0.05" value="0.40" max="1" min="0" id="puzzle_difficulty"
                        onchange="fromId('estimated_puzzle_time').innerText = timeText(solvedPuzzle.fromDifficulty(this.value).estimateTime())">
                 Estimated time: <span id="estimated_puzzle_time"></span>
                 <button tabindex="102"
-                        onclick="fullPuzzle=solvedPuzzle.fromDifficulty(fromId('puzzle_difficulty').value);scene.recreate(true);hide('popup_box');hide('popup_background')">Start!</button>
+                        onclick="fullPuzzle=solvedPuzzle.fromDifficulty(fromId('puzzle_difficulty').value);scene.recreate(true);showMenu('none');">Start!</button>
             </div>
-            <div class="popup_page" id="shortcuts_popup">
-                <button tabindex="1" class="popup_close" onclick="showPopup('none')">&times;</button>
+            <div class="menu_page" id="settings">
+                <button tabindex="1" class="menu_close" onclick="showMenu('main')">&times;</button>
+            </div>
+            <div class="menu_page" id="shortcuts">
+                <button tabindex="1" class="menu_close" onclick="showMenu('none')">&times;</button>
                 <div class="sandbox creator player">
                     <p>Underlined characters in the upper-right buttons are their shortcut</p>
                     <h3>Universal</h3>
@@ -119,20 +123,13 @@
                     O S<u>o</u>lve
                 </div>
             </div>
-            <div class="popup_page" id="metadata_popup">
-                <button tabindex="1" class="popup_close" onclick="showPopup('none')">&times;</button>
+            <div class="menu_page" id="metadata">
+                <button tabindex="1" class="menu_close" onclick="showMenu('none')">&times;</button>
                 <div id="metadata_inputs">
                 </div>
                 <button onclick="copyPuzzle()">Copy puzzle</button>
             </div>
-            <div class="popup_page" id="settings">
-                <button tabindex="1" class="popup_close" onclick="showPopup('main_menu')">&times;</button>
-            </div>
-            <script>
-            </script>
         </div>
-        <div id="popup_background"></div>
-        <div style="display:none" id="clipboard"> </div>
         <canvas id="canvas"></canvas>
     </body>
 
