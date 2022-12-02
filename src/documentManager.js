@@ -27,16 +27,16 @@ function editMetadata(name, value) {
         PuzzleMeta[i].onchange(value);
 }
 function generateMetaInputs() {
-    let out = "";
+    let out = "<table><tbody>";
     for(let i in PuzzleMeta) {
         let n = PuzzleMeta[i].name;
-        out += `
-        <label for="puzzle_${n}">${n}: </label><input type="text" id="puzzle_${n}" placeholder="${PuzzleMeta[i].placeholder}" oninput="editMetadata('${n}',this.value)"`;
+        out += `<tr><td>
+        <label for="puzzle_${n}">${n}: </label></td><td><input type="text" id="puzzle_${n}" placeholder="${PuzzleMeta[i].placeholder}" oninput="editMetadata('${n}',this.value)"`;
         if(fullPuzzle.metadata[n])
             out += ` value="${fullPuzzle.metadata[n]}"`;
-        out += `><br>`;
+        out += `></td></tr>`;
     }
-    return out;
+    return out+"</tbody></table>";
 }
 //converts "rgba(128,0,0)" to 0x800000
 function rgbaToHex(text) {
@@ -65,7 +65,7 @@ function openGameMode(type) {
     showMenu('none');
 }
 function updateAxisSizeList(dim) {
-    dim = Math.min(dim, 10);
+    dim = Math.max(3,Math.min(dim, 10));
     let text = "";
     for(let i = 0; i < dim; i++) {
         text += "<li><input type='number' min='1' max='32' placeholder='4' tabindex='" + (110 + i) + "'></li>";
@@ -83,8 +83,8 @@ function createPuzzle() {
     }
     else {
         let dimension = Number($("#puzzle_dimension").val() || 3);
-        if(dimension > 10 || dimension < 1) {
-            return printError("Dimension must be from 1-10");
+        if(dimension > 10 || dimension < 3) {
+            return printError("Dimension must be from 3-10");
         }
         let axises = $("#axis_size_list")[0];
         let size = [];
