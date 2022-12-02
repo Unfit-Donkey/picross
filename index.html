@@ -23,7 +23,7 @@
             <button class="option_button"
                     onclick="window.open('https://benjamin-cates.github.io/picross/guide')">Help</button>
             <button class="option_button" onclick="showMenu('shortcuts')">Shortcuts</button>
-            <button class="option_button" onclick="showMenu('main')"><u>E</u>xit</button>
+            <button class="option_button" onclick="openGameMode('exit')"><u>E</u>xit</button>
 
             <div class="sandbox">
                 <button class="option_button" onclick="copyPuzzle()">Cop<u>y</u></button>
@@ -46,9 +46,9 @@
         <!-- Menus -->
         <div id="main_menu">
             <div class="menu_page" id="main" style="display:block">
-                <button onclick="openGameMode('player');" tabindex="2">Play</button>
-                <button onclick="openGameMode('creator');" tabindex="3">Create</button>
-                <button onclick="openGameMode('solver');" tabindex="4">Solve</button>
+                <button onclick="showMenu('puzzle_player');" tabindex="2">Play</button>
+                <button onclick="updateAxisSizeList(3);showMenu('puzzle_creator');" tabindex="3">Create</button>
+                <button onclick="showMenu('puzzle_solver');" tabindex="4">Solve</button>
                 <button onclick="window.open('https://benjamin-cates.github.io/picross/guide','_blank');"
                         tabindex="7">Guide/Info</button>
             </div>
@@ -56,33 +56,41 @@
                 <button tabindex="1" class="menu_close" onclick="showMenu('main')">&times;</button>
                 <label for="puzzle_data">Duplicate from text:</label><input type="text" id="puzzle_data"
                        placeholder="eJxzSizOTFYoKK2qykmtM67z9XCr09YdB" tabindex="101"
-                       onpaste="window.setTimeout(createPuzzle)">
+                       onpaste="window.setTimeout(createPuzzle);openGameMode('creator');">
                 <br><br>
                 OR
                 <br><br>
                 <label for="puzzle_dimension">Dimension: </label><input type="number" min="1" placeholder="3" max="10"
                        oninput="updateAxisSizeList(this.value);" id="puzzle_dimension" tabindex="105"><br>
                 Axis size:
-                <ol id="axis_size_list" onload="updateAxisSizeList(3);">
+                <ol id="axis_size_list">
                 </ol>
                 <br>
-                <button onclick="createPuzzle()" tabindex="130">Go!</button>
+                <button onclick="createPuzzle();openGameMode('creator');" tabindex="130">Go!</button>
             </div>
-            <div class="menu_page" id="puzzle_data_enteror">
+            <div class="menu_page" id="puzzle_player">
                 <button tabindex="1" class="menu_close" onclick="showMenu('main')">&times;</button>
                 Puzzle data:<br>
                 <input type="text" placeholder="eJxzSizOTFYoKK2qykmtM67z9XCr09YdB" id="puzzle_player_data"
-                       tabindex="101" onpaste="window.setTimeout(loadPlayer)"><br>
+                       tabindex="101"><br>
+                <input type="number" step="0.05" value="0.40" max="1" min="0" id="puzzle_difficulty"
+                       onchange="$('#estimated_puzzle_time').html(timeText(solvedPuzzle.fromDifficulty(this.value).estimateTime()))">
+                Estimated time: <span id="estimated_puzzle_time"></span>
+                <button tabindex="102"
+                        onclick="solvedPuzzle = Puzzle.fromBase64($('#puzzle_player_data').val());fullPuzzle=solvedPuzzle.fromDifficulty($('#puzzle_difficulty').val());scene.recreate(true);openGameMode('player');">Start!</button>
 
-                <button tabindex="102" onclick="loadPlayer()">Continue</button>
+            </div>
+            <div class="menu_page" id="puzzle_solver">
+                <button tabindex="1" class="menu_close" onclick="showMenu('main')">&times;</button>
+                Puzzle data:<br>
+                <input type="text" placeholder="eJxzSizOTFYoKK2qykmtM67z9XCr09YdB" id="puzzle_solve_data"
+                       tabindex="101"><br>
+                <button tabindex="102" onclick="fullPuzzle=Puzzle.fromBase64($('#puzzle_solve_data').val());scene.recreate(true);openGameMode('solver');">Continue</button>
+
+
             </div>
             <div class="menu_page" id="puzzle_difficulty_enteror">
                 <button tabindex="1" class="menu_close" onclick="showMenu('puzzle_data_enteror')">&times;</button>
-                <input type="number" step="0.05" value="0.40" max="1" min="0" id="puzzle_difficulty"
-                       onchange="fromId('estimated_puzzle_time').innerText = timeText(solvedPuzzle.fromDifficulty(this.value).estimateTime())">
-                Estimated time: <span id="estimated_puzzle_time"></span>
-                <button tabindex="102"
-                        onclick="fullPuzzle=solvedPuzzle.fromDifficulty(fromId('puzzle_difficulty').value);scene.recreate(true);showMenu('none');">Start!</button>
             </div>
             <div class="menu_page" id="settings">
                 <button tabindex="1" class="menu_close" onclick="showMenu('main')">&times;</button>

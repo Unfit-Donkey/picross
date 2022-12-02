@@ -136,6 +136,7 @@ window.scene = {
         let renderedSlices = slicer.slices.slice();
         renderedSlices[slicer.minorAxis] = -1 - slicer.minorDirection;
         puzzle.sliceFrom(renderedSlices, fullPuzzle);
+        puzzle.generateSidesVisible();
         scene.updateVoxels();
         scene.update();
         input.updateRotation();
@@ -295,6 +296,7 @@ window.input = {
         input.mouseX = m.x;
         input.mouseY = m.y;
         input.latestEvent = e;
+        if(gameMode == "mainMenu") return;
         if(slicer.active) return slicer.drag();
         if(e.buttons & 1 == 1 || e.type == "touchmove") {
             if(e.ctrlKey || e.shiftKey) {

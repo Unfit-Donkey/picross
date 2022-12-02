@@ -52,14 +52,15 @@ function rgbaToHex(text) {
     return parseInt(out, 16);
 }
 function openGameMode(type) {
+    if(type == "exit") {
+        showMenu("main");
+        return gameMode = "mainMenu";
+    }
     let types = ["player", "creator", "solver"];
-    if(!types.includes(type)) return printError(type + " is not a valid game mode");
     gameMode = type;
-    let firstPage = ["puzzle_data_enteror", "puzzle_creator", "puzzle_creator"];
     for(let i in types) $('.' + types[i]).hide();
     $("." + type).show();
-    showMenu(firstPage[types.indexOf(type)]);
-    updateAxisSizeList(3);
+    showMenu('none');
 }
 function updateAxisSizeList(dim) {
     dim = Math.min(dim, 10);
@@ -121,7 +122,7 @@ const keyboardCommands = [
     {key: "a", func: _ => slicer.update(slicer.focusedSlice, null, "inc")},
     {key: "w", func: _ => slicer.update(slicer.focusedSlice - 1)},
     {key: "s", func: _ => slicer.update(slicer.focusedSlice + 1)},
-    {key: "escape", allowInMenu: true, func: _ => $('#main_menu').hide()},
+    {key: "escape", allowInMenu: true, func: _ => gameMode == "mainMenu" ? showMenu('main') : showMenu('none')},
     {key: "e", func: _ => {showMenu("main");}},
 ];
 onkeydown = function (e) {
@@ -135,6 +136,7 @@ onkeydown = function (e) {
         if(isInMenu && keyboardCommands[i].allowInMenu != true) continue;
         if(key == keyboardCommands[i].key) keyboardCommands[i].func();
     }
+    if(gameMode == "mainMenu") return;
     //Digits - slicer specific layer
     if("1234567890".includes(key)) {
         let digit = key.charCodeAt(0) - "1".charCodeAt(0);

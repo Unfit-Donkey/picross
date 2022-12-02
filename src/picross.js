@@ -209,7 +209,7 @@ Puzzle.prototype.fromDifficulty = function (difficulty) {
     return out;
 }
 //Estimate time to solve puzzle
-Puzzle.prototype.estimateTime = function() {
+Puzzle.prototype.estimateTime = function () {
     Module.setPuzzle(this.toString());
     return Module.solve();
 }
@@ -346,11 +346,16 @@ Puzzle.fromString = function (str) {
 }
 //Create puzzle from base64
 Puzzle.fromBase64 = function (str) {
-    let unencoded = atob(str);
-    let data = new Uint8Array(unencoded.length);
-    unencoded.split("").map((a, i) => data[i] = a.charCodeAt(0));
-    let unzippedString = Pako.inflate(data, {to: "string"});
-    return Puzzle.fromString(unzippedString);
+    try {
+        let unencoded = atob(str);
+        let data = new Uint8Array(unencoded.length);
+        unencoded.split("").map((a, i) => data[i] = a.charCodeAt(0));
+        let unzippedString = Pako.inflate(data, {to: "string"});
+        return Puzzle.fromString(unzippedString);
+    }
+    catch(e) {
+        printError("Invalid puzzle");
+    }
 }
 const cell_error = 0;
 const cell_broken = 1;
