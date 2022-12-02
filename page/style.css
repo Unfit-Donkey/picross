@@ -199,3 +199,11 @@ input::-webkit-inner-spin-button {
 input[type=number] {
   -moz-appearance: textfield;
 }
+#guide {
+    height:100vh;
+}
+#guide_iframe {
+    border:0;
+    width:100%;
+    height:100%;
+}

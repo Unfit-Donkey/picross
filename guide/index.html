@@ -4,6 +4,13 @@
     <head>
         <meta name="viewport" content="width=device-width">
         <title>Picross guide</title>
+        <style>
+        * {
+            color:#fff;
+
+        }
+
+        </style>
     </head>
 
     <body>
@@ -46,7 +53,7 @@
             <text x="23" y="40" text-anchor="middle" fill="black" class="hintExampleText">4</text>
         </svg>
         <table id="example1" class="cellListTable">
-            <script>window.addEventListener("load", _ => fromId("example1").innerHTML = generateRow(["xxxx   ", " xxxx  ", "  xxxx ", "   xxxx", "       ", "---x---"]))</script>
+            <script>window.addEventListener("load", _ => document.getElementById("example1").innerHTML = generateRow(["xxxx   ", " xxxx  ", "  xxxx ", "   xxxx", "       ", "---x---"]))</script>
         </table>
         Each row represents a possibility and the final row is what can be determined about the shape.<br>
 
@@ -80,7 +87,7 @@
             .cellList>td {
                 width: 50px;
                 height: 50px;
-                border: 1px solid #000;
+                border: 0.2em solid #000;
             }
 
             .cellList>td.c {
@@ -91,6 +98,11 @@
                 background: #FFF;
             }
 
+            .cellList>td {
+                background:#888;
+
+            }
+
             .hintExampleText {
                 font-size: 40px;
                 font-family: Consolas;
@@ -99,7 +111,29 @@
             }
 
             .hintExample {
-                border: 1px solid #000;
+                border: 0.2em solid #000;
+                background:#fff;
+            }
+            @font-face {
+                font-family:"lato";
+                src: url("../lib/lato.ttf") format("truetype");
+                font-weight:normal;
+                font-size:normal;
+            }
+            body {
+                font-family:"lato";
+                margin-top:5em;
+                margin-bottom:5em;
+            }
+            body::-webkit-scrollbar {
+                width: 25px;
+            }
+            body::-webkit-scrollbar-thumb {
+                background-color: #ffffff55;
+                background-clip:padding-box;
+                border:8px solid #00000000;
+                border-radius: 20px;
+                margin-right:10px;
             }
         </style>
         <script>

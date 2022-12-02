@@ -4,6 +4,8 @@ function showMenu(id) {
         $("#main_menu").hide();
         return;
     }
+    if(id == "guide")
+        $("#guide_iframe").prop("src", function () {return $(this).data("src")});
     $(".menu_page").hide();
     $("#" + id).show();
     $("#main_menu").show();

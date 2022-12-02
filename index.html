@@ -20,8 +20,7 @@
         </div>
         <!-- Action buttons -->
         <div class="option_buttons_holder" id="puzzle_viewer">
-            <button class="option_button"
-                    onclick="window.open('https://benjamin-cates.github.io/picross/guide')">Help</button>
+            <button class="option_button" onclick="showMenu('guide')">Help</button>
             <button class="option_button" onclick="showMenu('shortcuts')">Shortcuts</button>
             <button class="option_button" onclick="openGameMode('exit')"><u>E</u>xit</button>
 
@@ -49,8 +48,7 @@
                 <button onclick="showMenu('puzzle_player');" tabindex="2">Play</button>
                 <button onclick="updateAxisSizeList(3);showMenu('puzzle_creator');" tabindex="3">Create</button>
                 <button onclick="showMenu('puzzle_solver');" tabindex="4">Solve</button>
-                <button onclick="window.open('https://benjamin-cates.github.io/picross/guide','_blank');"
-                        tabindex="7">Guide/Info</button>
+                <button onclick="showMenu('guide')" tabindex="7">Guide/Info</button>
             </div>
             <div class="menu_page" id="puzzle_creator">
                 <button tabindex="1" class="menu_close" onclick="showMenu('main')">&times;</button>
@@ -89,8 +87,9 @@
 
 
             </div>
-            <div class="menu_page" id="puzzle_difficulty_enteror">
-                <button tabindex="1" class="menu_close" onclick="showMenu('puzzle_data_enteror')">&times;</button>
+            <div class="menu_page" id="guide">
+                <button tabindex="1" class="menu_close" onclick="showMenu('main')">&times;</button>
+                <iframe id="guide_iframe" data-src="guide/index.html"></iframe>
             </div>
             <div class="menu_page" id="settings">
                 <button tabindex="1" class="menu_close" onclick="showMenu('main')">&times;</button>
