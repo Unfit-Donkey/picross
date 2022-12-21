@@ -5,9 +5,9 @@ const cell_colored = 2;
 const cell_unsure = 3;
 window.Puzzle = Puzzle;
 window.THREE = THREE;
-//Holds the currently viewed puzzle (3d slice)
+//Holds the currently viewed puzzle (3d projection)
 window.puzzle = null;
-//Holds the full puzzle that is cut down to the 3d puzzle
+//Holds the full puzzle that is then cut down to the 3d puzzle
 window.fullPuzzle = null;
 //Holds the entire solved puzzle
 window.solvedPuzzle = null;
@@ -135,7 +135,7 @@ window.scene = {
         }
         let renderedSlices = slicer.slices.slice();
         renderedSlices[slicer.minorAxis] = -1 - slicer.minorDirection;
-        puzzle.sliceFrom(renderedSlices, fullPuzzle);
+        puzzle.project3D(renderedSlices, fullPuzzle);
         puzzle.generateSidesVisible();
         scene.updateVoxels();
         scene.update();

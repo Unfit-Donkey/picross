@@ -39,9 +39,9 @@ export class Puzzle {
 }
 //Positional retrieval functions
 //Turns position vector into an index
-Puzzle.prototype.collapsePos = function (position) {
+Puzzle.prototype.collapsePos = function (vector) {
     //Multiply each position component by its spacing and take the sum
-    return position.map((p, i) => p * this.spacing[i]).reduce((a, b) => a + b);
+    return vector.map((p, i) => p * this.spacing[i]).reduce((a, b) => a + b);
 }
 //Splices a row from a starting position index and a direction
 Puzzle.prototype.getRow = function (pos, dim) {
@@ -55,25 +55,25 @@ Puzzle.prototype.getRow = function (pos, dim) {
     return out;
 }
 //Convert a position and direction into a hint position in the hint array
-Puzzle.prototype.getHintPosition = function (positionIndex, direction) {
-    let below = positionIndex % this.spacing[direction];
-    let above = Math.floor(positionIndex / this.spacing[direction + 1]) * this.spacing[direction];
+Puzzle.prototype.getHintPosition = function (position, direction) {
+    let below = position % this.spacing[direction];
+    let above = Math.floor(position / this.spacing[direction + 1]) * this.spacing[direction];
     return this.maxFaceSize * direction + below + above;
 }
 //Converts multidimensional position index into 3d position index where dims is the slicer state
-Puzzle.prototype.unslicePosition = function (pos, dims) {
+Puzzle.prototype.positionTo3D = function (vector, dims) {
     let size = [];
     for(let i in [0, 1, 2]) size[i] = this.size[dims.indexOf(-1 - i)] || 1;
     let posArray = dims.slice();
     //Set x,y, and z of the output array
-    posArray[dims.indexOf(-1)] = pos % size[0];
-    posArray[dims.indexOf(-2)] = Math.floor(pos / size[0]) % size[1];
-    posArray[dims.indexOf(-3)] = Math.floor(pos / size[0] / size[1]) % size[2];
+    posArray[dims.indexOf(-1)] = vector % size[0];
+    posArray[dims.indexOf(-2)] = Math.floor(vector / size[0]) % size[1];
+    posArray[dims.indexOf(-3)] = Math.floor(vector / size[0] / size[1]) % size[2];
     //Collapse to 3d position
     return this.collapsePos(posArray);
 }
 //Converts position index into position vector
-Puzzle.prototype.getXYZ = function (position) {
+Puzzle.prototype.getVector = function (position) {
     let out = [];
     for(let i = 0; i < this.dimension; i++) {
         out[i] = Math.floor(position / this.spacing[i]) % this.size[i];
@@ -122,7 +122,7 @@ Puzzle.prototype.generateSidesVisible = function () {
     });
 }
 //Create a new puzzle from a puzzle and a slicer state
-Puzzle.prototype.sliceFrom = function (dims, puz) {
+Puzzle.prototype.project3D = function (dims, puz) {
     //Find x, y, and z axis
     this.size = [];
     for(let i in [0, 1, 2]) this.size[i] = puz.size[dims.indexOf(-1 - i)] || 1;

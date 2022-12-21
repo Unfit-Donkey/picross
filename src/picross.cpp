@@ -9,7 +9,7 @@
 #endif
 
 using namespace std;
-typedef enum Cell : char {
+typedef enum Cell: char {
     unsure = 3, broken = 1, painted = 2, error = 0
 } Cell;
 typedef struct Hint {
@@ -60,13 +60,13 @@ string rowToString(Cell* row, int len) {
 class Puzzle {
 public:
     int dimension;
-    int* size = NULL;
-    Cell* shape = NULL;
-    Hint* hints = NULL;
+    vector<int> size;
+    vector<Cell> shape;
+    vector<Hint> hints;
 private:
     int maxFaceSize;
     int shapeSize;
-    int* spacing = NULL;
+    vector<int> spacing;
     void computeShapeSize() {
         int minimumRowLength = 10000;
         shapeSize = 1;
@@ -75,8 +75,7 @@ private:
             if(size[i] < minimumRowLength) minimumRowLength = size[i];
         }
         maxFaceSize = shapeSize / minimumRowLength;
-        free(spacing);
-        spacing = (int*)calloc(dimension, sizeof(int));
+        spacing = vector<int>(dimension);
         int space = 1;
         for(int i = 0;i < dimension;i++) {
             spacing[i] = space;
@@ -100,14 +99,12 @@ public:
         }
         //Dimension and size
         dimension = atoi(strs[0].c_str());
-        free(size);
-        size = (int*)calloc(dimension, sizeof(int));
+        size = vector<int>(dimension);
         for(int i = 0;i < dimension;i++) size[i] = strs[1][i] - 'A';
         computeShapeSize();
         //Copy shape
-        free(shape);
-        shape = (Cell*)calloc(strs[2].size(), sizeof(Cell));
-        memset(shape, 3, strs[2].size());
+        shape = vector<Cell>(strs[2].size());
+        memset(&shape[0], 3, strs[2].size());
         for(int i = 0;i < strs[2].size();i++) {
             if(strs[2][i] == ' ') shape[i] = broken;
             else if(strs[2][i] == '-') shape[i] = unsure;
@@ -115,8 +112,7 @@ public:
             else shape[i] = error;
         }
         //Copy hints
-        free(hints);
-        hints = (Hint*)calloc(dimension * maxFaceSize, sizeof(Hint));
+        hints = vector<Hint>(dimension * maxFaceSize);
         int index = 0;
         for(int dim = 0; dim < dimension; dim++) {
             for(int x = 0; x < shapeSize / size[dim]; x++) {
@@ -129,12 +125,10 @@ public:
     }
     Puzzle(int dim, int* siz) {
         dimension = dim;
-        free(size);
-        size = (int*)calloc(dim, sizeof(int));
-        memcpy(size, siz, dim * sizeof(int));
+        size = vector<int>(dim);
+        memcpy(&size[0], siz, dim * sizeof(int));
         computeShapeSize();
-        free(shape);
-        shape = (Cell*)calloc(shapeSize, sizeof(Cell));
+        shape = vector<Cell>(shapeSize);
     }
     struct SolveTime solve() {
         struct SolveTime time;
@@ -175,8 +169,7 @@ public:
         return time;
     }
     void generateHints() {
-        free(hints);
-        hints = (Hint*)calloc(maxFaceSize * dimension, sizeof(Hint));
+        hints = vector<Hint>(maxFaceSize * dimension);
         for(int i = 0;i < shapeSize;i++) {
             for(int dim = 0;dim < dimension;dim++) {
                 int rowPos = getRowPosition(i, dim);
@@ -210,7 +203,7 @@ public:
         int above = (pos / spacing[direction] / size[direction]) * spacing[direction];
         return below + above;
     }
-    void posToPositionArray(int pos, int* out) {
+    void posToVector(int pos, int* out) {
         for(int i = 0;i < dimension;i++) {
             out[i] = pos % size[i];
             pos /= size[i];
@@ -241,17 +234,17 @@ public:
         }
         return out;
     }
-    int collapsePosition(int* position) {
+    int vectorToPos(vector<int> vec) {
         int out = 0;
-        for(int i = 0;i < dimension;i++) {
-            out += position[i] * spacing[i];
+        for(int i = 0;i < vec.size();i++) {
+            out += vec[i] * spacing[i];
         }
         return out;
     }
-    Cell getCell(int* position) {
-        return shape[collapsePosition(position)];
+    Cell getCell(vector<int> vec) {
+        return shape[vectorToPos(vec)];
     }
-    Hint getHint(int* position, int direction) {
+    Hint getHint(vector<int> position, int direction) {
         int pos = 0;
         for(int i = 0;i < dimension;i++) {
             if(i == direction) continue;
@@ -259,8 +252,8 @@ public:
         }
         return hints[maxFaceSize * direction + pos];
     }
-    void setCell(int* position, Cell set) {
-        shape[collapsePosition(position)] = set;
+    void setCell(vector<int> position, Cell set) {
+        shape[vectorToPos(position)] = set;
     }
     void getRow(int position, int dim, Cell* out) {
         int rowLength = size[dim];
