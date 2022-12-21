@@ -19,7 +19,8 @@ window.PuzzleMeta = [
     {name: "metalness", placeholder: "0.5", default: 0.5, onchange: _ => scene.setPaintColor()},
     {name: "background", placeholder: "https://", default: null, onchange: _ => scene.setBackground()},
     {name: "roughness", placeholder: "0", default: 0, onchange: _ => scene.setPaintColor()},
-    {name: "name", placeholder: "Puzzle", defualt: "Puzzle"},
+    {name: "difficulty", placeholder: "0.5", default: 0.5},
+    {name: "name", placeholder: "Puzzle", default: "Puzzle"},
 ];
 function editMetadata(name, value) {
     fullPuzzle.metadata[name] = value;
@@ -69,7 +70,7 @@ function updateAxisSizeList(dim) {
     let text = "";
     const names = "xyz4567890";
     for(let i = 0; i < dim; i++) {
-        text += "<tr><td>" + names.charAt(i) + "</td><td><input id='axis"+i+"' type='number' min='1' max='32' placeholder='4' tabindex='" + (110 + i) + "'></td></tr>";
+        text += "<tr><td>" + names.charAt(i) + "</td><td><input id='axis" + i + "' type='number' min='1' max='32' placeholder='4' tabindex='" + (110 + i) + "'></td></tr>";
     }
     $("#axis_size_list").html(text);
 }
@@ -83,27 +84,46 @@ function createPuzzle() {
         }
     }
     else {
+        //Confirm dimensionality
         let dimension = Number($("#puzzle_dimension").val() || 3);
         if(dimension > 10 || dimension < 3) {
             return printError("Dimension must be from 3-10");
         }
         let axises = $("#axis_size_list")[0];
         let size = [];
+        //Confirm axis sizes
         for(let i = 0; i < axises.children.length; i++) {
-            size[i] = Number($("#axis"+i).val() || 4);
+            size[i] = Number($("#axis" + i).val() || 4);
             if(size[i] < 1 || size[i] > 32) {
                 return printError("Axis size must be from 1-32");
             }
         }
-        console.log("New puzzle: ", name, dimension, size);
-        fullPuzzle = new Puzzle(dimension, size, name);
+        //Create puzzle object
+        console.log("New puzzle: ", dimension, size);
+        fullPuzzle = new Puzzle(dimension, size);
         fullPuzzle.shape.fill(cell_unsure);
         fullPuzzle.hintsTotal.fill(0);
         fullPuzzle.hintsPieces.fill(0);
+        //Fill in metadata
+        window.PuzzleMeta.forEach(item => {
+            fullPuzzle.metadata[item.name] = item.default;
+        });
     }
     scene.recreate(true);
     slicer.create(fullPuzzle);
     $("#main_menu").hide();
+}
+function finishPuzzle() {
+    //Color unsure to colored
+    puzzle.foreachCell((cell, i) => puzzle.shape[i] = (cell == cell_unsure ? cell_colored : cell));
+    //Generate hints
+    puzzle.generateHints();
+    //Encode and copy to clipboard
+    let encoding = puzzle.toBase64();
+    navigator.clipboard.writeText(
+        "https://benjamin-cates.github.io/picross/?play=" + encoding);
+    //Show success message
+    printMessage("Puzzle copied to clipboard");
 }
 function timeText(time) {
     time = Math.round(time);
@@ -116,6 +136,12 @@ function printError(message) {
     $("#error").css({"transition": "none", "opacity": "1"});
     error.offsetHeight;
     $("#error").css({"transition": "opacity 1s ease 2s", "opacity": "0"});
+}
+function printMessage(message) {
+    $("#message").html(message);
+    $("#message").css({"transition": "none", "opacity": "1"});
+    error.offsetHeight;
+    $("#message").css({"transition": "opacity 1s ease 2s", "opacity": "0"});
 }
 const keyboardCommands = [
     {key: "p", func: pastePuzzle, type: "sandbox"},
@@ -189,6 +215,29 @@ function loadPlayer() {
         throw e;
 
     }
+}
+function parseArg(arg) {
+    let name = arg.split("=")[0];
+    let value = arg.substring(name.length + 1);
+    if(name == "play") {
+        console.log(value);
+        solvedPuzzle = Puzzle.fromBase64(value);
+        fullPuzzle = solvedPuzzle.fromDifficulty(Number(solvedPuzzle.metadata.difficulty));
+        fullPuzzle.shape.fill(cell_unsure);
+        setTimeout(_ => {
+            slicer.create(fullPuzzle);
+            scene.recreate(true);
+            openGameMode('player');
+        }, 10);
+    }
+}
+window.onload = function () {
+    console.log("func");
+    let args = window.location.href.split("?")[1];
+    if(args)
+        args.split("&").forEach(parseArg);
+
+
 }
 const cell_unsure = 3;
 const cell_colored = 2;

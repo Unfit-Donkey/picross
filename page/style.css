@@ -34,7 +34,7 @@ button {
 u {
     text-decoration:underline;
 }
-#error {
+.message {
     position:absolute;
     display:inline-block;
     top: 75%;
@@ -42,13 +42,16 @@ u {
     transform: translate(-50%, -50%);
     pointer-events:none;
     z-index:500;
-    background:#FF000088;
     color:#FFFFFF;
     font-size:1.5em;
     box-sizing:border-box;
     padding:0.5em;
     border-radius:1.5em;
     opacity:0;
+    background:#44444488;
+}
+#error {
+    background:#FF000088;
 }
 #slicer {
     display:inline-block;

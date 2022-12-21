@@ -6,7 +6,7 @@ const cell_unsure = 3;
 window.Puzzle = Puzzle;
 window.THREE = THREE;
 //Holds the currently viewed puzzle (3d projection)
-window.puzzle = null;
+window.puzzle = new Puzzle(3,[1,1,1]);
 //Holds the full puzzle that is then cut down to the 3d puzzle
 window.fullPuzzle = null;
 //Holds the entire solved puzzle
@@ -96,9 +96,9 @@ window.scene = {
         if(old == newType) return;
         //Update both puzzle objects
         puzzle.shape[position] = newType;
-        fullPuzzle.shape[fullPuzzle.unslicePosition(position, slicer.getRendered())] = newType;
+        fullPuzzle.shape[fullPuzzle.positionTo3D(position, slicer.getRendered())] = newType;
         //Update mesh in scene
-        let xyz = puzzle.getXYZ(position);
+        let xyz = puzzle.getVector(position);
         scene.obj.remove(scene.voxels[position]);
         scene.voxels[position] = scene.createVoxelMesh(xyz[0], xyz[1], xyz[2], position);
         scene.obj.add(scene.voxels[position]);
@@ -465,6 +465,7 @@ window.slicer = {
     offset: 0,
     selected: 0,
     create: function (puzzle) {
+        console.log(fullPuzzle);
         this.slices = new Array(fullPuzzle.dimension);
         this.element = $("#slicer")[0];
         this.element.innerHTML = "";
