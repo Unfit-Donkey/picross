@@ -36,7 +36,7 @@ function generateMetaInputs() {
             out += ` value="${fullPuzzle.metadata[n]}"`;
         out += `></td></tr>`;
     }
-    return out+"</tbody></table>";
+    return out + "</tbody></table>";
 }
 //converts "rgba(128,0,0)" to 0x800000
 function rgbaToHex(text) {
@@ -65,10 +65,11 @@ function openGameMode(type) {
     showMenu('none');
 }
 function updateAxisSizeList(dim) {
-    dim = Math.max(3,Math.min(dim, 10));
+    dim = Math.max(3, Math.min(dim, 10));
     let text = "";
+    const names = "xyz4567890";
     for(let i = 0; i < dim; i++) {
-        text += "<li><input type='number' min='1' max='32' placeholder='4' tabindex='" + (110 + i) + "'></li>";
+        text += "<tr><td>" + names.charAt(i) + "</td><td><input id='axis"+i+"' type='number' min='1' max='32' placeholder='4' tabindex='" + (110 + i) + "'></td></tr>";
     }
     $("#axis_size_list").html(text);
 }
@@ -89,7 +90,7 @@ function createPuzzle() {
         let axises = $("#axis_size_list")[0];
         let size = [];
         for(let i = 0; i < axises.children.length; i++) {
-            size[i] = Number(axises.children[i].children[0].value || 4);
+            size[i] = Number($("#axis"+i).val() || 4);
             if(size[i] < 1 || size[i] > 32) {
                 return printError("Axis size must be from 1-32");
             }

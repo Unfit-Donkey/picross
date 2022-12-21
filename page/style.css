@@ -171,6 +171,7 @@ button:not(.option_button,.slicer_button):focus, input:focus {
 .menu_page {
     width: max(50vw,min(90vw,calc(100% - (100% - 600px) * 0.75)));
     height: max(50vh,min(90vh,calc(100% - (100% - 20px) * 0.75)));
+    text-align:center;
 }
 #main > button {
     display:table;
@@ -188,8 +189,13 @@ button:not(.option_button,.slicer_button):focus, input:focus {
     vertical-align:middle;
 
 }
-#axis_size_list {
+#metadata_inputs > table {
     margin:0;
+    display:inline-block;
+    text-align:left;
+}
+#shortcuts {
+    text-align:left;
 }
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {

@@ -52,17 +52,25 @@
             </div>
             <div class="menu_page" id="puzzle_creator">
                 <button tabindex="1" class="menu_close" onclick="showMenu('main')">&times;</button>
-                <label for="puzzle_data">Duplicate from text:</label><input type="text" id="puzzle_data"
+                <label for="puzzle_data">Duplicate from text:</label><br><input type="text" id="puzzle_data"
                        placeholder="eJxzSizOTFYoKK2qykmtM67z9XCr09YdB" tabindex="101"
                        onpaste="window.setTimeout(createPuzzle);openGameMode('creator');">
                 <br><br>
                 OR
                 <br><br>
-                <label for="puzzle_dimension">Dimension: </label><input type="number" min="1" placeholder="3" max="10"
-                       oninput="updateAxisSizeList(this.value);" id="puzzle_dimension" tabindex="105"><br>
-                Axis size:
-                <ol id="axis_size_list">
-                </ol>
+                <table style="display:inline-block">
+                    <thead>
+                        <tr>
+                            <td><label for="puzzle_dimension">Dimensions: </label></td>
+                            <td><input type="number" min="1" placeholder="3" max="10"
+                                       oninput="updateAxisSizeList(this.value);" id="puzzle_dimension" tabindex="105">
+                            </td>
+
+                    </thead>
+                    <tbody id="axis_size_list">
+                    </tbody>
+                </table>
+                <br>
                 <br>
                 <button onclick="createPuzzle();openGameMode('creator');" tabindex="130">Go!</button>
             </div>
@@ -83,7 +91,8 @@
                 Puzzle data:<br>
                 <input type="text" placeholder="eJxzSizOTFYoKK2qykmtM67z9XCr09YdB" id="puzzle_solve_data"
                        tabindex="101"><br>
-                <button tabindex="102" onclick="fullPuzzle=Puzzle.fromBase64($('#puzzle_solve_data').val());scene.recreate(true);openGameMode('solver');">Continue</button>
+                <button tabindex="102"
+                        onclick="fullPuzzle=Puzzle.fromBase64($('#puzzle_solve_data').val());scene.recreate(true);openGameMode('solver');">Continue</button>
 
 
             </div>
@@ -132,8 +141,9 @@
             </div>
             <div class="menu_page" id="metadata">
                 <button tabindex="1" class="menu_close" onclick="showMenu('none')">&times;</button>
-                <div id="metadata_inputs">
-                </div>
+                <span id="metadata_inputs">
+                </span>
+                <br>
                 <button onclick="copyPuzzle()">Copy puzzle</button>
             </div>
         </div>
