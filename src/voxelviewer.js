@@ -68,6 +68,7 @@ window.scene = {
         scene.renderer = new THREE.WebGLRenderer({antialias: true, alpha: true, canvas: scene.canvas});
         scene.renderer.setClearColor(0x000000, 0);
         scene.camera = new THREE.OrthographicCamera(0, 0, 0, 0, -1000, 1000);
+        scene.camera.layers.set(0);
         scene.obj = new THREE.Scene();
         scene.obj.add(scene.camera);
         scene.camera.position.set(50, 0, 0);
@@ -83,6 +84,7 @@ window.scene = {
         scene.obj.add(scene.faceSelector);
         for(let i = 0; i < 3; i++) {
             scene.sliceGuides[i] = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), new THREE.MeshStandardMaterial({color: 0xFF0000 >> (i * 8)}));
+            scene.sliceGuides[i].layers.set(0);
             scene.obj.add(scene.sliceGuides[i]);
         }
         //Debug objects
@@ -189,7 +191,9 @@ window.scene = {
     },
     //
     update: function () {
+        if(window.blag) return;
         let visibleSideMap = (scene.camera.position.x > 0 ? 2 : 1) + (scene.camera.position.y > 0 ? 2 : 1) * 4 + (scene.camera.position.z > 0 ? 2 : 1) * 16;
+        //Show or hide cells based on visibility
         puzzle.foreachCell((cell, i, pos) => {
             let isVisible = (puzzle.visibleSides[i] & visibleSideMap);
             if(slicer.minorAxis != -1) {
@@ -200,7 +204,9 @@ window.scene = {
                     if(puzzle.shape[i] != cell_broken) isVisible = 1;
                 }
             }
-            scene.voxels[i].visible = !!isVisible;
+            //Set layer mask to hide or show
+            if(isVisible) scene.voxels[i].traverse(obj => obj.layers.enable(0));
+            else scene.voxels[i].traverse(obj => obj.layers.disable(0));
         });
         for(let i = 0; i < 3; i++) {
             if(slicer.minorDirection != i && slicer.minorAxis != -1) {
