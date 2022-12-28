@@ -535,7 +535,7 @@ window.slicer = {
             this.active = true;
             this.cursorStart = [input.mouseX, input.mouseY];
             this.offset = Math.max(this.slices[this.minorAxis], -1);
-            let yTheta = input.yRot, xTheta = input.xRot;
+            let yTheta = -input.theta, xTheta = input.phi;
             if(this.minorDirection == 0) this.cursorUnit = [Math.cos(yTheta), Math.sin(yTheta) * Math.sin(xTheta)];
             if(this.minorDirection == 1) this.cursorUnit = [0, Math.cos(xTheta)];
             if(this.minorDirection == 2) this.cursorUnit = [Math.sin(yTheta), -Math.cos(yTheta) * Math.sin(xTheta)];
