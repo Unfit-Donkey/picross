@@ -6,7 +6,7 @@ const cell_unsure = 3;
 window.Puzzle = Puzzle;
 window.THREE = THREE;
 //Holds the currently viewed puzzle (3d projection)
-window.puzzle = new Puzzle(3,[1,1,1]);
+window.puzzle = new Puzzle(3, [1, 1, 1]);
 //Holds the full puzzle that is then cut down to the 3d puzzle
 window.fullPuzzle = null;
 //Holds the entire solved puzzle
@@ -356,9 +356,7 @@ window.input = {
     //Event for clicking
     cubeClick: function () {
         let e = input.latestEvent;
-        let cursorPos = input.getCursorPosition();
-        let direction = new THREE.Vector3(0, 0, 0).copy(scene.camera.position).multiplyScalar(-1).normalize();
-        let intersection = puzzle.rayIntersect(cursorPos, direction.toArray());
+        let intersection = this.raycastVoxels();
         if(intersection.pos != -1) {
             let dir = Math.floor(input.prevVoxel.face / 2);
             if(e.type != "mousedown" && e.type != "touchstart" && (
@@ -382,6 +380,27 @@ window.input = {
         }
         input.prev = intersection;
     },
+    //Returns intesecting cube as {pos: _, face: _} or {pos: -1, face: -1} if not found
+    raycastVoxels: function () {
+        let caster = new THREE.Raycaster();
+        caster.layers.set(0);
+        caster.setFromCamera(new THREE.Vector2(input.mouseX / window.innerWidth * 2, input.mouseY / window.innerHeight * 2), scene.camera);
+        let intersects = caster.intersectObjects(scene.voxels, false);
+        if(intersects.length != 0) {
+            //Get cube index
+            let cube = intersects[0].object.position.toArray();
+            cube = cube.map((v, i) => v + puzzle.size[i] / 2 - 0.5);
+            let index = puzzle.collapsePos(cube);
+            //Get face
+            let dir = -1;
+            intersects[0].face.normal.toArray().forEach((v, i) => {
+                if(v == -1) dir = 2 * i;
+                if(v == 1) dir = 2 * i + 1;
+            });
+            return {pos: index, face: dir};
+        }
+        return {pos: -1, face: -1};
+    },
     prevVoxel: {pos: -1, face: -1},
     paintType: -1,
     phi: 0,
@@ -399,9 +418,7 @@ window.input = {
     //Update selected face if it was clicked
     updateSelectedFace: function () {
         if(input.latestEvent.shiftKey || input.latestEvent.ctrlKey) {
-            let cursorPos = input.getCursorPosition();
-            let direction = new THREE.Vector3(0, 0, 0).copy(scene.camera.position).multiplyScalar(-1).normalize();
-            let intersection = puzzle.rayIntersect(cursorPos, direction.toArray());
+            let intersection = this.raycastVoxels();
             if(intersection.pos != -1) if(input.selectedBlock != intersection.pos || input.selectedFace != intersection.face) {
                 scene.faceSelector.layers.mask = 1;
                 //scene.voxels[input.selectedBlock].material = scene.materials.selected;
@@ -440,27 +457,6 @@ window.input = {
         if(oldVisibleSideMap != visibleSideMap) scene.update();
         input.doRender = true;
     },
-    getCursorPosition: function () {
-        const normalize = vector => {
-            let magnitude = Math.sqrt(vector[0] ** 2 + vector[1] ** 2 + vector[2] ** 2);
-            return vector.map(v => v / magnitude);
-        }
-        let phi = this.phi;
-        let theta = this.theta;
-        let xPixelStep = normalize([1, 0, Math.tan(-theta)]);
-        //Reverse xPixel step if looking the other way
-        if(theta > Math.PI / 2 && theta < 3 * Math.PI / 2) {
-            xPixelStep[0] = -xPixelStep[0];
-            xPixelStep[2] = -xPixelStep[2];
-        }
-        let yPixelStep = normalize([Math.sin(-theta), 1 / Math.tan(phi), -Math.cos(theta)]);
-        return yPixelStep.map((yStep, i) =>
-            yStep * (Math.sign(phi) * this.mouseY / this.boxSize)
-            + xPixelStep[i] * (this.mouseX / this.boxSize)
-            + scene.camera.position["xyz".charAt(i)]
-            + puzzle.size[i] / 2
-        );
-    }
 };
 window.slicer = {
     minorAxis: -1,

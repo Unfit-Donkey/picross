@@ -159,37 +159,6 @@ Puzzle.prototype.project3D = function (dims, puz) {
         this.hintsPieces[hintPos] = puz.hintsPieces[oldHintPosition];
     });
 }
-//Intersect start and velocity vector with the first solid cube
-Puzzle.prototype.rayIntersect = function (start, vel) {
-    let velocityMagnitude = Math.sqrt(vel[0] * vel[0] + vel[1] * vel[1] + vel[2] * vel[2]);
-    //Setup starting variables
-    let normVel = vel.map(v => v / velocityMagnitude);
-    let dir = vel.map(v => Math.sign(v));
-    let closestCell = start.map((v, i) => ((v < 0 ? 1 - v : v) % 1 + 1) % 1);
-    let tDelta = normVel.map(v => Math.abs(1 / v));
-    let tMax = tDelta.map((v, i) => closestCell[i] * v);
-    //Variables that keep track of state
-    let curCell = start.map(v => Math.floor(v));
-    let recentFace = 0;
-    let pos = this.collapsePos(curCell);
-    //Raycast loop
-    for(let count = 0; count < 100; count++) {
-        //Check if intersects cube
-        if(curCell.every(v => v >= 0) && curCell.every((v, i) => v < this.size[i])) {
-            if(scene.voxels[pos].visible) return {pos: pos, face: (recentFace * 2) + (dir[recentFace] < 0 ? 1 : 0)};
-        }
-        //Advance along closest plane to tip of ray
-        let closest = Math.min(tMax[0], tMax[1], tMax[2]);
-        for(let i = 0; i < 3; i++) if(closest == tMax[i]) {
-            tMax[i] += tDelta[i];
-            curCell[i] += dir[i];
-            recentFace = i;
-            pos += dir[i] * this.spacing[i];
-            break;
-        }
-    }
-    return {pos: -1, face: -1};
-}
 //Generate a new puzzle with certain hints missing based on a linear difficulty scale
 Puzzle.prototype.fromDifficulty = function (difficulty) {
     //Random number generator seeded with a
