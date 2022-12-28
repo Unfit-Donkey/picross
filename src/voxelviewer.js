@@ -378,8 +378,8 @@ window.input = {
     },
     prevVoxel: {pos: -1, face: -1},
     paintType: -1,
-    xRot: 0,
-    yRot: 0,
+    phi: 0,
+    theta: 0,
     mouseX: 0,
     pmouseX: 0,
     mouseY: 0,
@@ -419,12 +419,14 @@ window.input = {
     updateRotation: function () {
         let oldVisibleSideMap = (scene.camera.position.x > 0 ? 2 : 1) + (scene.camera.position.y > 0 ? 2 : 1) * 4 + (scene.camera.position.z > 0 ? 2 : 1) * 16;
         const mouseSpeed = 0.006;
-        this.yRot -= (this.pmouseX - this.mouseX) * mouseSpeed;
-        this.xRot += (this.pmouseY - this.mouseY) * mouseSpeed;
-        if(this.xRot > Math.PI / 2) this.xRot = Math.PI / 2;
-        if(this.xRot < -Math.PI / 2) this.xRot = -Math.PI / 2;
-        this.yRot = (this.yRot + Math.PI * 2) % (Math.PI * 2);
-        scene.camera.position.set(Math.sin(this.yRot) * - Math.cos(this.xRot), Math.sin(this.xRot), Math.cos(this.xRot) * Math.cos(this.yRot));
+        this.theta += (this.pmouseX - this.mouseX) * mouseSpeed;
+        this.phi += (this.pmouseY - this.mouseY) * mouseSpeed;
+        //Clamp phi in [-pi/2,pi/2]
+        if(this.phi > Math.PI / 2) this.phi = Math.PI / 2;
+        if(this.phi < -Math.PI / 2) this.phi = -Math.PI / 2;
+        //Reduce factors of 2pi in theta
+        this.theta = (this.theta + Math.PI * 2) % (Math.PI * 2);
+        scene.camera.position.set(Math.sin(this.theta) * Math.cos(this.phi), Math.sin(this.phi), Math.cos(this.theta) * Math.cos(this.phi));
         scene.camera.position.multiplyScalar(50);
         scene.camera.lookAt(0, 0, 0);
         scene.camera.updateProjectionMatrix();
@@ -437,17 +439,17 @@ window.input = {
             let magnitude = Math.sqrt(vector[0] ** 2 + vector[1] ** 2 + vector[2] ** 2);
             return vector.map(v => v / magnitude);
         }
-        let xRot = this.xRot;
-        let yRot = this.yRot;
-        let xPixelStep = normalize([1, 0, Math.tan(yRot)]);
+        let phi = this.phi;
+        let theta = this.theta;
+        let xPixelStep = normalize([1, 0, Math.tan(-theta)]);
         //Reverse xPixel step if looking the other way
-        if(yRot > Math.PI / 2 && yRot < 3 * Math.PI / 2) {
+        if(theta > Math.PI / 2 && theta < 3 * Math.PI / 2) {
             xPixelStep[0] = -xPixelStep[0];
             xPixelStep[2] = -xPixelStep[2];
         }
-        let yPixelStep = normalize([Math.sin(yRot), 1 / Math.tan(xRot), -Math.cos(yRot)]);
+        let yPixelStep = normalize([Math.sin(-theta), 1 / Math.tan(phi), -Math.cos(theta)]);
         return yPixelStep.map((yStep, i) =>
-            yStep * (Math.sign(xRot) * this.mouseY / this.boxSize)
+            yStep * (Math.sign(phi) * this.mouseY / this.boxSize)
             + xPixelStep[i] * (this.mouseX / this.boxSize)
             + scene.camera.position["xyz".charAt(i)]
             + puzzle.size[i] / 2
