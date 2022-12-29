@@ -329,7 +329,7 @@ window.input = {
             openGameMode(input.url.gamemode);
         if(input.url.puz) {
             try {
-                solvedPuzzle = Puzzle.fromBase64(input.url.puz);
+                fullPuzzle = Puzzle.fromBase64(input.url.puz);
             }
             catch(e) {
                 printError("invalid puzzle");
@@ -340,6 +340,17 @@ window.input = {
             fullPuzzle = solvedPuzzle.fromDifficulty(Number(input.url.difficulty));
             scene.recreate(true);
             $("#main_menu").hide();
+        }
+        if(input.url.play) {
+            solvedPuzzle = Puzzle.fromBase64(input.url.play);
+            if(input.url.difficulty) solvedPuzzle.metadata.difficulty = input.url.difficulty;
+            fullPuzzle = solvedPuzzle.fromDifficulty(Number(solvedPuzzle.metadata.difficulty));
+            fullPuzzle.shape.fill(cell_unsure);
+            setTimeout(_ => {
+                slicer.create(fullPuzzle);
+                scene.recreate(true);
+                openGameMode('player');
+            }, 10);
         }
     },
     onload: function () {

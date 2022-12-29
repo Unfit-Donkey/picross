@@ -216,29 +216,6 @@ function loadPlayer() {
 
     }
 }
-function parseArg(arg) {
-    let name = arg.split("=")[0];
-    let value = arg.substring(name.length + 1);
-    if(name == "play") {
-        console.log(value);
-        solvedPuzzle = Puzzle.fromBase64(value);
-        fullPuzzle = solvedPuzzle.fromDifficulty(Number(solvedPuzzle.metadata.difficulty));
-        fullPuzzle.shape.fill(cell_unsure);
-        setTimeout(_ => {
-            slicer.create(fullPuzzle);
-            scene.recreate(true);
-            openGameMode('player');
-        }, 10);
-    }
-}
-window.onload = function () {
-    console.log("func");
-    let args = window.location.href.split("?")[1];
-    if(args)
-        args.split("&").forEach(parseArg);
-
-
-}
 const cell_unsure = 3;
 const cell_colored = 2;
 const cell_broken = 1;
