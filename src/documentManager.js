@@ -181,14 +181,8 @@ onkeyup = function (e) {
     if(input) input.latestEvent = e;
 }
 function solveCurrentPuzzle() {
-    Module.setPuzzle(fullPuzzle.toString());
-    Module.solve();
-    fullPuzzle = Puzzle.fromString(Module.getPuzzle());
-    scene.recreate();
-}
-function getSolveTime(puzzle) {
-    Module.setPuzzle(puzzle.toString());
-    return Module.solve();
+    fullPuzzle.smartSolve();
+    scene.recreate(true);
 }
 function copyPuzzle() {
     navigator.clipboard.writeText(fullPuzzle.toBase64());

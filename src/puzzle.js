@@ -1,5 +1,6 @@
 // Import Pako for binary compression
 import * as Pako from "../lib/pako.js";
+import {RowSolve} from "./rowSolve.js";
 window.Pako = Pako;
 //Puzzle also has other methods below this definition
 export class Puzzle {
@@ -53,6 +54,22 @@ Puzzle.prototype.getRow = function (pos, dim) {
         out[i] = this.shape[start + spacing * i];
     }
     return out;
+}
+Puzzle.prototype.setRow = function (pos, dim, row) {
+    let spacing = this.spacing[dim];
+    //Start is the position at the beginning of the row
+    let start = pos % spacing + Math.floor(pos / this.spacing[dim + 1]) * this.spacing[dim + 1];
+    for(let i = 0; i < this.size[dim]; i++) {
+        this.shape[start + spacing * i] = row[i];
+    }
+    return out;
+}
+Puzzle.prototype.hintToPos = function (hint) {
+    let dim = Math.floor(hint / this.maxFaceSize);
+    hint -= dim * this.maxFaceSize;
+    let below = hint % this.spacing[dim];
+    let above = Math.floor(hint / this.spacing[dim]) * this.spacing[dim + 1];
+    return below + above;
 }
 //Convert a position and direction into a hint position in the hint array
 Puzzle.prototype.getHintPosition = function (position, direction) {
@@ -177,11 +194,6 @@ Puzzle.prototype.fromDifficulty = function (difficulty) {
     });
     return out;
 }
-//Estimate time to solve puzzle
-Puzzle.prototype.estimateTime = function () {
-    Module.setPuzzle(this.toString());
-    return Module.solve();
-}
 //Foreach functions
 Puzzle.prototype.foreachCell = function (func) {
     let pos = new Array(this.dimension);
@@ -206,6 +218,16 @@ Puzzle.prototype.foreachHint = function (func) {
         }
     }
 }
+//Runs func(row,hintIndex) on each row
+Puzzle.prototype.foreachRow = function (func) {
+    for(let dim = 0; dim < this.dimension; dim++) {
+        for(let i = 0; i < this.shapeSize / this.size[dim]; i++) {
+            let pos = Math.floor(i / this.spacing[dim]) * this.spacing[dim + 1] + i % this.spacing[dim];
+            let hintPos = i + dim * this.maxFaceSize;
+            func(this.getRow(pos, dim), hintPos);
+        }
+    }
+}
 //Utility Functions
 //Delete all rows that have a zero for a hint
 Puzzle.prototype.deleteZeroedRows = function () {
@@ -219,6 +241,22 @@ Puzzle.prototype.deleteZeroedRows = function () {
 }
 Puzzle.prototype.generateActionableRows = function () {
 
+}
+Puzzle.prototype.generateHints = function () {
+    //Iterate through each row and create the hints
+    this.foreachRow((row, index) => {
+        let pieces = 0;
+        let total = 0;
+        let prev = cell_broken;
+        row.forEach(v => {
+            if(v == cell_unsure) v = cell_colored;
+            if(v == cell_colored) total++;
+            if(v == cell_colored && prev == cell_broken) pieces++;
+            prev = v;
+        });
+        this.hintsPieces[index] = pieces;
+        this.hintsTotal[index] = total;
+    });
 }
 //Export functions
 Puzzle.prototype.toString = function () {
@@ -325,6 +363,77 @@ Puzzle.fromBase64 = function (str) {
     catch(e) {
         printError("Invalid puzzle");
     }
+}
+//Solving functions
+//Solves a puzzle using brute force (checking every row repeatedly)
+Puzzle.prototype.bruteForceSolve = function () {
+    let isChange = true;
+    //Loop through each row while there is still a change
+    while(isChange) this.foreachRow((row, hintIndex) => {
+        if(this.hintsPieces[hintIndex] == 0) return;
+        let newRow = RowSolve.solve(row, this.hintsTotal[hintIndex], this.hintsPieces[hintIndex]);
+        if(newRow == null) return;
+        isChange = true;
+        this.setRow(hintIndex, newRow);
+    });
+}
+//Solves puzzles using row solve. Returns the number of time units (arbitrary unit of complexity) of the solution
+Puzzle.prototype.smartSolve = function () {
+    //One time unit is approximately one second for an average solver
+    let complexity = {size: this.shapeSize, rowComplexity: 0, zeroes: 0, rowChecks: 0}
+    //Keep track of which rows are in the queue
+    let isQueued = [];
+    //Queue of rows to be checked
+    let rowQueue = [];
+    //Add all rows to a queue
+    for(let i = 0; i < this.dimension; i++) {
+        let offset = i * this.maxFaceSize;
+        for(let x = 0; x < this.shapeSize / this.size[i]; x++) {
+            if(this.hintsPieces[offset + x] == 0) continue;
+            isQueued[offset + x] = true;
+            rowQueue.push(offset + x);
+        }
+    }
+    console.log(rowQueue);
+    //Loop while there is still a row in the queue
+    while(rowQueue.length != 0) {
+        console.log(rowQueue[0]);
+        complexity.rowChecks++;
+        let rowId = rowQueue.shift();
+        isQueued[rowId] = false;
+        //Get position information
+        let dim = Math.floor(rowId / this.maxFaceSize);
+        let pos = this.hintToPos(rowId);
+        let row = this.getRow(pos, dim);
+        //Skip if solved already
+        if(row.indexOf(3) == -1) continue;
+        complexity.rowComplexity += this.hintsTotal[rowId] + 2 * this.hintsPieces[rowId];
+        if(this.hintsTotal[rowId] == 0) complexity.zeroes++;
+        //Solve row
+        let newRow = RowSolve.solve(row, this.hintsTotal[rowId], this.hintsPieces[rowId]);
+        console.log(newRow,row);
+        if(newRow == null) continue;
+        //Update cells in new row if it is different
+        for(let i = 0; i < row.length; i++) {
+            if(row[i] == newRow[i]) continue;
+            //Update cell
+            this.shape[pos + this.spacing[dim] * i] = newRow[i];
+            //Add intersecting rows to list
+            for(let x = 0; x < this.dimension; x++) {
+                let id = this.getHintPosition(pos + this.spacing[dim] * i, x);
+                //Skip if already queued or is current row
+                if(isQueued[id]) continue;
+                if(id == rowId) continue;
+                isQueued[id] = true;
+                rowQueue.push(id);
+            }
+        }
+    }
+    return complexity.size * 0.2 +
+        complexity.rowChecks * 0.5 +
+        complexity.rowComplexity * 0.3 -
+        complexity.zeroes * 0.3;
+    //Done!
 }
 const cell_error = 0;
 const cell_broken = 1;

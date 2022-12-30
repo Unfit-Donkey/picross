@@ -1,9 +1,11 @@
 import * as THREE from "../lib/three.module.min.js";
-import {Puzzle} from "./picross.js";
+import {Puzzle} from "./puzzle.js";
+import {RowSolve} from "./rowSolve.js";
 const cell_broken = 1;
 const cell_colored = 2;
 const cell_unsure = 3;
 window.Puzzle = Puzzle;
+window.RowSolve = RowSolve;
 window.THREE = THREE;
 //Holds the currently viewed puzzle (3d projection)
 window.puzzle = new Puzzle(3, [1, 1, 1]);
