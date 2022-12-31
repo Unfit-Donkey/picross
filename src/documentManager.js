@@ -14,6 +14,103 @@ function convertColor(n) {
     $("#textRender").css("background", n);
     return window.getComputedStyle($("#textRender")[0]).backgroundColor;
 }
+const action = {
+    solve: _ => {
+        fullPuzzle.smartSolve();
+        scene.recreate(true);
+    },
+    copy: _ => {
+        navigator.clipboard.writeText(fullPuzzle.toBase64());
+        printMessage("Copied");
+    },
+    paste: _ => {
+        navigator.clipboard.readText().then(str => {
+            try {
+                fullPuzzle = Puzzle.fromBase64(str);
+                scene.recreate(true);
+            }
+            catch(e) {
+                printError("Invalid puzzle");
+                console.log(e);
+            }
+        });
+    },
+    set: _ => {
+        try {
+            fullPuzzle = Puzzle.fromBase64($("#puzzle_data").val());
+            if(gameMode == "player") action.updateDifficulty();
+        }
+        catch(e) {
+            printError("Invalid puzzle");
+            throw e;
+
+        }
+    },
+    updateDifficulty: _ => {
+
+    },
+    finish: _ => {
+        //Color unsure to colored
+        fullPuzzle.foreachCell((cell, i) => puzzle.shape[i] = (cell == cell_unsure ? cell_colored : cell));
+        //Generate hints
+        fullPuzzle.generateHints();
+        //Encode and copy to clipboard
+        let encoding = puzzle.toBase64();
+        navigator.clipboard.writeText(
+            "https://benjamin-cates.github.io/picross/?play=" + encoding);
+        //Show success message
+        printMessage("Puzzle url copied");
+    },
+    open: _ => {
+        if((data = $("#puzzle_data").val()) != "") {
+            $("#puzzle_data").val("");
+            try {
+                fullPuzzle = Puzzle.fromBase64(data);
+                if(gameMode=="player") {
+                    solvedPuzzle = fullPuzzle;
+                    fullPuzzle = solvedPuzzle.fromDifficulty($("#puzzle_difficulty"));
+                }
+            } catch(e) {
+                printError("Invalid puzzle string");
+                throw e;
+            }
+        }
+        else {
+            if(gameMode == "player") return printError("No puzzle to play!");
+            //Confirm dimensionality
+            let dimension = Number($("#puzzle_dimension").val() || 3);
+            if(dimension > 10 || dimension < 3) {
+                return printError("Dimension must be from 3-10");
+            }
+            let axises = $("#axis_size_list")[0];
+            let size = [];
+            //Confirm axis sizes
+            for(let i = 0; i < axises.children.length; i++) {
+                size[i] = Number($("#axis" + i).val() || 4);
+                if(size[i] < 1 || size[i] > 32) {
+                    return printError("Axis size must be from 1-32");
+                }
+            }
+            //Create puzzle object
+            console.log("New puzzle: ", dimension, size);
+            fullPuzzle = new Puzzle(dimension, size);
+            fullPuzzle.shape.fill(cell_unsure);
+            fullPuzzle.hintsTotal.fill(0);
+            fullPuzzle.hintsPieces.fill(0);
+            //Fill in metadata
+            window.PuzzleMeta.forEach(item => {
+                fullPuzzle.metadata[item.name] = item.default;
+            });
+        }
+        scene.recreate(true);
+        slicer.create(fullPuzzle);
+        showMenu("none");
+    },
+    deleteZeroes: _ => {
+        fullPuzzle.deleteZeroedRows();
+        scene.recreate();
+    },
+};
 window.PuzzleMeta = [
     {name: "color", placeholder: "hex or word", default: "rgb(187,255,153)", onchange: _ => scene.setPaintColor()},
     {name: "metalness", placeholder: "0.5", default: 0.5, onchange: _ => scene.setPaintColor()},
@@ -63,9 +160,11 @@ function openGameMode(type) {
     gameMode = type;
     for(let i in types) $('.' + types[i]).hide();
     $("." + type).show();
-    showMenu('none');
+    showMenu('puzzle_enteror');
+    updateAxisSizeList(3);
 }
-function updateAxisSizeList(dim) {
+function updateAxisSizeList() {
+    let dim = $("#puzzle_dimension").val();
     dim = Math.max(3, Math.min(dim, 10));
     let text = "";
     const names = "xyz4567890";
@@ -73,57 +172,6 @@ function updateAxisSizeList(dim) {
         text += "<tr><td>" + names.charAt(i) + "</td><td><input id='axis" + i + "' type='number' min='1' max='32' placeholder='4' tabindex='" + (110 + i) + "'></td></tr>";
     }
     $("#axis_size_list").html(text);
-}
-function createPuzzle() {
-    if((data = $("#puzzle_data").val()) != "") {
-        try {
-            fullPuzzle = Puzzle.fromBase64(data);
-        } catch(e) {
-            printError("Invalid puzzle string");
-            throw e;
-        }
-    }
-    else {
-        //Confirm dimensionality
-        let dimension = Number($("#puzzle_dimension").val() || 3);
-        if(dimension > 10 || dimension < 3) {
-            return printError("Dimension must be from 3-10");
-        }
-        let axises = $("#axis_size_list")[0];
-        let size = [];
-        //Confirm axis sizes
-        for(let i = 0; i < axises.children.length; i++) {
-            size[i] = Number($("#axis" + i).val() || 4);
-            if(size[i] < 1 || size[i] > 32) {
-                return printError("Axis size must be from 1-32");
-            }
-        }
-        //Create puzzle object
-        console.log("New puzzle: ", dimension, size);
-        fullPuzzle = new Puzzle(dimension, size);
-        fullPuzzle.shape.fill(cell_unsure);
-        fullPuzzle.hintsTotal.fill(0);
-        fullPuzzle.hintsPieces.fill(0);
-        //Fill in metadata
-        window.PuzzleMeta.forEach(item => {
-            fullPuzzle.metadata[item.name] = item.default;
-        });
-    }
-    scene.recreate(true);
-    slicer.create(fullPuzzle);
-    $("#main_menu").hide();
-}
-function finishPuzzle() {
-    //Color unsure to colored
-    puzzle.foreachCell((cell, i) => puzzle.shape[i] = (cell == cell_unsure ? cell_colored : cell));
-    //Generate hints
-    puzzle.generateHints();
-    //Encode and copy to clipboard
-    let encoding = puzzle.toBase64();
-    navigator.clipboard.writeText(
-        "https://benjamin-cates.github.io/picross/?play=" + encoding);
-    //Show success message
-    printMessage("Puzzle copied to clipboard");
 }
 function timeText(time) {
     time = Math.round(time);
@@ -144,9 +192,9 @@ function printMessage(message) {
     $("#message").css({"transition": "opacity 1s ease 2s", "opacity": "0"});
 }
 const keyboardCommands = [
-    {key: "p", func: pastePuzzle, type: "sandbox"},
-    {key: "y", func: copyPuzzle, type: "sandbox"},
-    {key: "h", func: _ => window.open("https://benjamin-cates.github.io/picross/guide", "_blank")},
+    {key: "p", func: action.paste, type: "sandbox"},
+    {key: "y", func: action.copy, type: "sandbox"},
+    {key: "h", func: _ => showMenu("guide")},
     {key: "d", func: _ => slicer.update(slicer.focusedSlice, null, "dec")},
     {key: "a", func: _ => slicer.update(slicer.focusedSlice, null, "inc")},
     {key: "w", func: _ => slicer.update(slicer.focusedSlice - 1)},
@@ -179,36 +227,6 @@ onkeydown = function (e) {
 }
 onkeyup = function (e) {
     if(input) input.latestEvent = e;
-}
-function solveCurrentPuzzle() {
-    fullPuzzle.smartSolve();
-    scene.recreate(true);
-}
-function copyPuzzle() {
-    navigator.clipboard.writeText(fullPuzzle.toBase64());
-}
-function pastePuzzle() {
-    navigator.clipboard.readText().then(str => {
-        try {
-            fullPuzzle = Puzzle.fromBase64(str);
-            scene.recreate(true);
-        }
-        catch(e) {
-            printError("Invalid puzzle");
-            console.log(e);
-        }
-    });
-}
-function loadPlayer() {
-    let data = $("#puzzle_player_data").val();
-    try {
-        solvedPuzzle = Puzzle.fromBase64(data);
-    }
-    catch(e) {
-        printError("Invalid puzzle");
-        throw e;
-
-    }
 }
 const cell_unsure = 3;
 const cell_colored = 2;

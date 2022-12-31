@@ -24,8 +24,8 @@
             <button class="option_button" onclick="openGameMode('exit')"><u>E</u>xit</button>
 
             <div class="sandbox">
-                <button class="option_button" onclick="copyPuzzle()">Cop<u>y</u></button>
-                <button class="option_button" onclick="pastePuzzle()"><u>P</u>aste</button>
+                <button class="option_button" onclick="action.copy()">Cop<u>y</u></button>
+                <button class="option_button" onclick="action.paste()"><u>P</u>aste</button>
             </div>
             <div class="creator">
                 <button class="option_button"
@@ -33,11 +33,11 @@
                     puzzle</button>
             </div>
             <div class="player">
-                <button class="option_button" onclick="fullPuzzle.deleteZeroedRows();scene.recreate();">Des<u>t</u>roy
+                <button class="option_button" onclick="action.deleteZeroes()">Des<u>t</u>roy
                     zeroes</button>
             </div>
             <div class="solver">
-                <button class="option_button" onclick="solveCurrentPuzzle()">S<u>o</u>lve</button>
+                <button class="option_button" onclick="action.solve()">S<u>o</u>lve</button>
             </div>
         </div>
         <div id="error" class="message"></div>
@@ -45,56 +45,57 @@
         <!-- Menus -->
         <div id="main_menu">
             <div class="menu_page" id="main" style="display:block">
-                <button onclick="showMenu('puzzle_player');" tabindex="2">Play</button>
-                <button onclick="updateAxisSizeList(3);showMenu('puzzle_creator');" tabindex="3">Create</button>
-                <button onclick="showMenu('puzzle_solver');" tabindex="4">Solve</button>
+                <button onclick="openGameMode('player');" tabindex="2">Play</button>
+                <button onclick="openGameMode('creator');" tabindex="3">Create</button>
+                <button onclick="openGameMode('solver');" tabindex="4">Solve</button>
                 <button onclick="showMenu('guide')" tabindex="7">Guide/Info</button>
             </div>
-            <div class="menu_page" id="puzzle_creator">
+            <div class="menu_page" id="puzzle_enteror">
                 <button tabindex="1" class="menu_close" onclick="showMenu('main')">&times;</button>
-                <label for="puzzle_data">Duplicate from text:</label><br><input type="text" id="puzzle_data"
-                       placeholder="eJxzSizOTFYoKK2qykmtM67z9XCr09YdB" tabindex="101"
-                       onpaste="window.setTimeout(createPuzzle);openGameMode('creator');">
-                <br><br>
-                OR
-                <br><br>
-                <table style="display:inline-block">
-                    <thead>
-                        <tr>
-                            <td><label for="puzzle_dimension">Dimensions: </label></td>
-                            <td><input type="number" min="1" placeholder="3" max="10"
-                                       oninput="updateAxisSizeList(this.value);" id="puzzle_dimension" tabindex="105">
-                            </td>
+                <div class="creator">
+                    <label for="puzzle_data">Duplicate from text:</label><br>
+                </div>
+                <div class="solver player">
+                    <label for="puzzle_data">Enter puzzle data:</label><br>
+                </div>
+                <input type="text" id="puzzle_data" placeholder="eJxzSizOTFYoKK..." tabindex="101"
+                       onpaste="setTimeout(action.set)">
+                <!-- Axis size lists-->
+                <div class="creator solver">
+                    <br><br>
+                    OR
+                    <br><br>
+                    <table style="display:inline-block">
+                        <thead>
+                            <tr>
+                                <td><label for="puzzle_dimension">Dimensions: </label></td>
+                                <td><input type="number" min="1" placeholder="3" max="10"
+                                           oninput="updateAxisSizeList();" id="puzzle_dimension"
+                                           tabindex="105">
+                                </td>
 
-                    </thead>
-                    <tbody id="axis_size_list">
-                    </tbody>
-                </table>
-                <br>
-                <br>
-                <button onclick="createPuzzle();openGameMode('creator');" tabindex="130">Go!</button>
+                        </thead>
+                        <tbody id="axis_size_list">
+                        </tbody>
+                    </table>
+                    <br>
+                    <br>
+                </div>
+                <!-- Difficulty enteror -->
+                <div class="player">
+                    <input type="number" step="1" value="4" max="10" min="0" id="puzzle_difficulty"
+                           oninput="$('#estimated_puzzle_time').html(timeText(solvedPuzzle.fromDifficulty(this.value).estimateTime()))">
+                    Estimated time: <span id="estimated_puzzle_time"></span>
+                </div>
+                <button onclick="action.open();" tabindex="130">Start</button>
             </div>
             <div class="menu_page" id="puzzle_player">
-                <button tabindex="1" class="menu_close" onclick="showMenu('main')">&times;</button>
-                Puzzle data:<br>
-                <input type="text" placeholder="eJxzSizOTFYoKK2qykmtM67z9XCr09YdB" id="puzzle_player_data"
-                       tabindex="101" onpaste="setTimeout(_=>solvedPuzzle = Puzzle.fromBase64(this.value));"><br>
-                <input type="number" step="0.05" value="0.40" max="1" min="0" id="puzzle_difficulty"
-                       oninput="$('#estimated_puzzle_time').html(timeText(solvedPuzzle.fromDifficulty(this.value).estimateTime()))">
-                Estimated time: <span id="estimated_puzzle_time"></span>
                 <button tabindex="102"
                         onclick="fullPuzzle=solvedPuzzle.fromDifficulty($('#puzzle_difficulty').val());fullPuzzle.shape.fill(cell_unsure);scene.recreate(true);openGameMode('player');slicer.create(fullPuzzle);">Start!</button>
-
             </div>
             <div class="menu_page" id="puzzle_solver">
-                <button tabindex="1" class="menu_close" onclick="showMenu('main')">&times;</button>
-                Puzzle data:<br>
-                <input type="text" placeholder="eJxzSizOTFYoKK2qykmtM67z9XCr09YdB" id="puzzle_solve_data"
-                       tabindex="101"><br>
                 <button tabindex="102"
                         onclick="fullPuzzle=Puzzle.fromBase64($('#puzzle_solve_data').val());scene.recreate(true);openGameMode('solver');">Continue</button>
-
-
             </div>
             <div class="menu_page" id="guide">
                 <button tabindex="1" class="menu_close" onclick="showMenu('main')">&times;</button>
@@ -144,7 +145,7 @@
                 <span id="metadata_inputs">
                 </span>
                 <br>
-                <button onclick="finishPuzzle()">Copy puzzle</button>
+                <button onclick="action.finish()">Copy puzzle</button>
             </div>
         </div>
         <canvas id="canvas"></canvas>
