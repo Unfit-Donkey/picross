@@ -6,6 +6,7 @@ window.Pako = Pako;
 export class Puzzle {
     //Constructors
     constructor(dimension = 0, size = []) {
+        if(dimension == 0) return;
         //Number of dimensions of the puzzle
         this.dimension = dimension;
         //Array with the length in each dimension
@@ -37,6 +38,18 @@ export class Puzzle {
             spacing *= this.size[i];
         }
     }
+}
+Puzzle.copy = puz => {
+    let out = new Puzzle();
+    out.dimension = puz.dimension;
+    out.size = puz.size.slice();
+    out.calculateSizes();
+    out.shape = puz.shape.slice();
+    out.hintsTotal = puz.hintsTotal.slice();
+    out.hintsPieces = puz.hintsPieces.slice();
+    out.metadata = {};
+    Object.assign(out.metadata, puz.metadata || {});
+    return out;
 }
 //Positional retrieval functions
 //Turns position vector into an index
@@ -156,8 +169,7 @@ Puzzle.prototype.project3D = function (dims, puz) {
         this.shape[i] = puz.shape[puz.collapsePos(oldPos)];
     });
     //Copy hints
-    this.foreachHint((cell, total, pieces, dim, i) => {
-        let hintPos = i + dim * this.maxFaceSize;
+    this.foreachHint((cell, total, pieces, dim, hintPos) => {
         if(dims.indexOf(-1 - dim) == -1) {
             this.hintsTotal[hintPos] = 0;
             this.hintsPieces[hintPos] = 0;
@@ -175,24 +187,6 @@ Puzzle.prototype.project3D = function (dims, puz) {
         this.hintsTotal[hintPos] = puz.hintsTotal[oldHintPosition];
         this.hintsPieces[hintPos] = puz.hintsPieces[oldHintPosition];
     });
-}
-//Generate a new puzzle with certain hints missing based on a linear difficulty scale
-Puzzle.prototype.fromDifficulty = function (difficulty) {
-    //Random number generator seeded with a
-    function mulberry32(a) {
-        return function () {
-            var t = a += 0x6D2B79F5;
-            t = Math.imul(t ^ t >>> 15, t | 1);
-            t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-            return ((t ^ t >>> 14) >>> 0) / 4294967296;
-        }
-    }
-    let rand = mulberry32(0xDEADBEEF);
-    let out = Puzzle.fromString(this.toString());
-    out.foreachHint((cell, total, pieces, dim, i) => {
-        if(rand() < difficulty) out.hintsPieces[dim * out.maxFaceSize + i] = 0;
-    });
-    return out;
 }
 //Foreach functions
 Puzzle.prototype.foreachCell = function (func) {
@@ -214,7 +208,7 @@ Puzzle.prototype.foreachHint = function (func) {
         for(let i = 0; i < this.shapeSize / this.size[dim]; i++) {
             let cell = Math.floor(i / this.spacing[dim]) * this.spacing[dim + 1] + i % this.spacing[dim];
             let hintPos = i + dim * this.maxFaceSize;
-            func(cell, this.hintsTotal[hintPos], this.hintsPieces[hintPos], dim, i);
+            func(cell, this.hintsTotal[hintPos], this.hintsPieces[hintPos], dim, hintPos);
         }
     }
 }
@@ -394,10 +388,8 @@ Puzzle.prototype.smartSolve = function () {
             rowQueue.push(offset + x);
         }
     }
-    console.log(rowQueue);
     //Loop while there is still a row in the queue
     while(rowQueue.length != 0) {
-        console.log(rowQueue[0]);
         complexity.rowChecks++;
         let rowId = rowQueue.shift();
         isQueued[rowId] = false;
@@ -411,7 +403,6 @@ Puzzle.prototype.smartSolve = function () {
         if(this.hintsTotal[rowId] == 0) complexity.zeroes++;
         //Solve row
         let newRow = RowSolve.solve(row, this.hintsTotal[rowId], this.hintsPieces[rowId]);
-        console.log(newRow,row);
         if(newRow == null) continue;
         //Update cells in new row if it is different
         for(let i = 0; i < row.length; i++) {
@@ -434,6 +425,57 @@ Puzzle.prototype.smartSolve = function () {
         complexity.rowComplexity * 0.3 -
         complexity.zeroes * 0.3;
     //Done!
+}
+Puzzle.prototype.getImportantHints = function () {
+    let out = [];
+    this.foreachHint(
+        (cell, total, pieces, dimension, index) =>
+            out.push({index: index, info: this.size[dimension] - total - pieces, rand: Math.random()})
+    );
+    //Shuffle to prevent sequential hint removal
+    out.sort((a, b) => a.rand - b.rand);
+    //Then sort by usefulness
+    out.sort((a, b) => a.info - b.info);
+    return out;
+}
+Puzzle.prototype.fromDifficulty = function (difficulty) {
+    let fails = 0;
+    this.shape.fill(cell_unsure);
+    let allHintsTime = this.smartSolve();
+    let curTime = allHintsTime;
+    let targetTime = curTime * (1 + difficulty ** 0.3);
+    let best = {puz: null, time: 0};
+    while(fails < 100) {
+        let savedHints = this.hintsPieces.slice();
+        curTime = allHintsTime;
+        let hints = this.getImportantHints();
+        //Slowly remove hints until the solve time reaches the target time
+        while(curTime < targetTime) {
+            if(hints.length == 0) break;
+            this.shape.fill(cell_unsure);
+            let hintToRemove = hints.shift().index;
+            const hintTemp = this.hintsPieces[hintToRemove];
+            this.hintsPieces[hintToRemove] = 0;
+            let thisSolve = this.smartSolve();
+            //If not solvable with the hint removed, put it back and continue
+            if(this.shape.indexOf(cell_unsure) != -1) {
+                this.hintsPieces[hintToRemove] = hintTemp;
+                continue;
+            }
+            curTime = thisSolve;
+        }
+        if(curTime > best.time) {
+            let out = Puzzle.copy(this);
+            best = {puz: out, time: curTime};
+        }
+        this.hintsPieces = savedHints;
+        if(curTime < targetTime) {
+            fails++;
+            continue;
+        }
+        break;
+    }
+    return best;
 }
 const cell_error = 0;
 const cell_broken = 1;

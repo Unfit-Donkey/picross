@@ -23,6 +23,7 @@ RowSolve.RowMatches = function (row1, row2) {
 }
 //Return a row that has guaranteed cells
 RowSolve.solve = function (row, total, pieces) {
+    if(pieces == 0) return null;
     let output = new Array(row.length);
     output.fill(0);
     let isChange = false;

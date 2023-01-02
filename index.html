@@ -60,6 +60,14 @@
                 </div>
                 <input type="text" id="puzzle_data" placeholder="eJxzSizOTFYoKK..." tabindex="101"
                        onpaste="setTimeout(action.set)">
+                <!-- Difficulty enteror -->
+                <div class="player">
+                    <input type="range" step="1" value="4" max="10" min="0" size="20" id="puzzle_difficulty"
+                           oninput="action.diffInput();">
+                    <div>
+                    Estimated time: <span id="estimated_puzzle_time"></span>
+                    </div>
+                </div>
                 <!-- Axis size lists-->
                 <div class="creator solver">
                     <br><br>
@@ -81,21 +89,7 @@
                     <br>
                     <br>
                 </div>
-                <!-- Difficulty enteror -->
-                <div class="player">
-                    <input type="number" step="1" value="4" max="10" min="0" id="puzzle_difficulty"
-                           oninput="$('#estimated_puzzle_time').html(timeText(solvedPuzzle.fromDifficulty(this.value).estimateTime()))">
-                    Estimated time: <span id="estimated_puzzle_time"></span>
-                </div>
                 <button onclick="action.open();" tabindex="130">Start</button>
-            </div>
-            <div class="menu_page" id="puzzle_player">
-                <button tabindex="102"
-                        onclick="fullPuzzle=solvedPuzzle.fromDifficulty($('#puzzle_difficulty').val());fullPuzzle.shape.fill(cell_unsure);scene.recreate(true);openGameMode('player');slicer.create(fullPuzzle);">Start!</button>
-            </div>
-            <div class="menu_page" id="puzzle_solver">
-                <button tabindex="102"
-                        onclick="fullPuzzle=Puzzle.fromBase64($('#puzzle_solve_data').val());scene.recreate(true);openGameMode('solver');">Continue</button>
             </div>
             <div class="menu_page" id="guide">
                 <button tabindex="1" class="menu_close" onclick="showMenu('main')">&times;</button>

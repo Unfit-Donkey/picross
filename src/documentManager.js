@@ -38,20 +38,34 @@ const action = {
     set: _ => {
         try {
             fullPuzzle = Puzzle.fromBase64($("#puzzle_data").val());
-            if(gameMode == "player") action.updateDifficulty();
+            if(gameMode == "player") {
+                solvedPuzzle = Puzzle.copy(fullPuzzle);
+                action.updateDifficulty();
+            }
         }
         catch(e) {
             printError("Invalid puzzle");
             throw e;
-
         }
     },
+    diffInput: _ => {
+        //Only update it if there has been no change in the past half second
+        window.clearTimeout(action.diffTimeout);
+        action.diffTimeout = window.setTimeout(action.updateDifficulty, 500);
+    },
     updateDifficulty: _ => {
-
+        //Read difficulty level
+        const level = Number($("#puzzle_difficulty").val());
+        let fromDiff = solvedPuzzle.fromDifficulty(level);
+        //Set fullPuzzle
+        fullPuzzle = fromDiff.puz;
+        fullPuzzle.shape.fill(cell_unsure);
+        //Update puzzle time estimate
+        $("#estimated_puzzle_time").html(timeText(fromDiff.time));
     },
     finish: _ => {
         //Color unsure to colored
-        fullPuzzle.foreachCell((cell, i) => puzzle.shape[i] = (cell == cell_unsure ? cell_colored : cell));
+        fullPuzzle.foreachCell((cell, i) => fullPuzzle.shape[i] = (cell == cell_unsure ? cell_colored : cell));
         //Generate hints
         fullPuzzle.generateHints();
         //Encode and copy to clipboard
@@ -63,17 +77,7 @@ const action = {
     },
     open: _ => {
         if((data = $("#puzzle_data").val()) != "") {
-            $("#puzzle_data").val("");
-            try {
-                fullPuzzle = Puzzle.fromBase64(data);
-                if(gameMode=="player") {
-                    solvedPuzzle = fullPuzzle;
-                    fullPuzzle = solvedPuzzle.fromDifficulty($("#puzzle_difficulty"));
-                }
-            } catch(e) {
-                printError("Invalid puzzle string");
-                throw e;
-            }
+            action.set();
         }
         else {
             if(gameMode == "player") return printError("No puzzle to play!");
