@@ -297,6 +297,7 @@ window.input = {
         input.onclick();
     },
     mousemove: function (e) {
+        if($("#main_menu").css("display") != "none") return;
         e.preventDefault();
         input.pmouseX = input.mouseX;
         input.pmouseY = input.mouseY;
@@ -304,7 +305,6 @@ window.input = {
         input.mouseX = m.x;
         input.mouseY = m.y;
         input.latestEvent = e;
-        if(gameMode == "mainMenu") return;
         if(slicer.active) return slicer.drag();
         if(e.buttons & 1 == 1 || e.type == "touchmove") {
             if(e.ctrlKey || e.shiftKey) {
