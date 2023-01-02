@@ -163,25 +163,56 @@ window.scene = {
         return mesh;
     },
     //
-    getVoxelTexture: function (hint, hintPieces, cellType) {
+    getVoxelTexture: function (hintTotal, hintPieces, cellType) {
+        const hint = hintTotal + "_" + hintPieces;
         if(cellType != 2 && cellType != 3) return scene.materials.unsure;
         let type = ["", "", "painted", "unsure"][cellType];
         if(hintPieces == 0) return scene.materials[type];
         else if(scene.materials.text[type][hint] == null) {
             scene.materials.text[type][hint] = new THREE.MeshStandardMaterial().copy(scene.materials[type]);
-            let texture = scene.getTextTexture(hint);
+            let texture = scene.getTextTexture(hintTotal, hintPieces);
             scene.materials.text[type][hint].map = texture;
         }
         return scene.materials.text[type][hint];
     },
     //Create a texture for a specific number
-    getTextTexture: function (num) {
+    getTextTexture: function (total, pieces) {
         let context = $("#textRender")[0].getContext("2d");
         context.clearRect(0, 0, 50, 50);
-        context.font = "40px Consolas";
+        const small = total >= 10 && pieces != 1;
+        context.font = (small ? "30px" : "40px") + " Consolas";
         context.fillStyle = "black";
         context.textAlign = "center";
-        context.fillText(num, 25, 40);
+        context.fillText(total, 25, small ? 34 : 38);
+        context.strokeStyle = "black";
+        context.fillStyle = "none";
+        context.lineWidth = "2";
+        //Circle outline
+        if(pieces == 2) {
+            context.beginPath();
+            context.ellipse(25, 25, 20, 20, 0, 0, 2 * Math.PI);
+            context.stroke();
+        }
+        //Square outline
+        else if(pieces == 3) {
+            context.strokeRect(5, 5, 40, 40);
+        }
+        //Square outline with subscript
+        else if(pieces > 3) {
+            const manyPieces = pieces >= 10;
+            context.beginPath();
+            context.moveTo(45, 32);
+            context.lineTo(45, 5);
+            context.lineTo(5, 5);
+            context.lineTo(5, 45);
+            context.lineTo(manyPieces ? 30 : 37, 45);
+            context.stroke();
+            context.font = "15px Consolas";
+            context.fillStyle = "black";
+            context.textAlign = "center";
+            context.fillText(pieces, manyPieces ? 40 : 43, 46);
+        }
+        //Get image data and convert to texture
         let imageData = context.getImageData(0, 0, 50, 50).data;
         let grayscale = new Uint8Array(50 * 50);
         for(let x = 0; x < 50; x++) for(let y = 0; y < 50; y++) grayscale[x + y * 50] = 255 - imageData[(x + (49 - y) * 50) * 4 + 3];
