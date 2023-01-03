@@ -5,10 +5,6 @@ const cell_unsure = 3;
 export class RowSolve {
 
 }
-//Assumes row1 and row2 are the same length. Does a bitwise OR of the two rows
-RowSolve.OrRow = function (row1, row2) {
-    return row1.map((v, i) => v | row2[i]);
-}
 //Checks if (row1 | row2) == row1 for each element, but returns false if row1==row2. Assumes they are the same length
 RowSolve.RowMatches = function (row1, row2) {
     //Check if they match
@@ -28,15 +24,16 @@ RowSolve.solve = function (row, total, pieces) {
     output.fill(0);
     let isChange = false;
     let possibilities = RowSolve.possibilities(total, pieces, row.length);
-    possibilities.forEach(possib => {
+    for(let possib of possibilities) {
         //If possibility is valid with current row, OR it with the current output
         if(RowSolve.RowMatches(row, possib)) {
             isChange = true;
-            output = RowSolve.OrRow(possib, output);
+            //OR the possilibity with the output
+            for(let i in output) output[i] |= possib[i];
         }
-    });
+    }
     if(isChange) return output;
-    else return null;
+    return null;
 }
 RowSolve.cache = [];
 RowSolve.cache.get = function (total, pieces, length) {

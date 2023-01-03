@@ -414,6 +414,7 @@ Puzzle.prototype.smartSolve = function () {
             for(let x = 0; x < this.dimension; x++) {
                 let id = this.getHintPosition(pos + this.spacing[dim] * i, x);
                 //Skip if already queued or is current row
+                if(this.hintsPieces[id] == 0) continue;
                 if(isQueued[id]) continue;
                 if(id == rowId) continue;
                 isQueued[id] = true;
@@ -427,11 +428,14 @@ Puzzle.prototype.smartSolve = function () {
         complexity.zeroes * 0.3;
     //Done!
 }
+const fastrand = Array.from({length: 101}, _ => Math.random() + 2);
+let fastrandidx = 0;
+Puzzle.fastrand = fastrand;
 Puzzle.prototype.getImportantHints = function () {
     let out = [];
     this.foreachHint(
         (cell, total, pieces, dimension, index) =>
-            out.push({index: index, score: (this.size[dimension] - total - pieces + 5) * (1 + Math.random())})
+            out.push({index: index, score: (this.size[dimension] - total - pieces * 2 + 5) * (++fastrandidx >= fastrand.length ? fastrand[fastrandidx = 0] : fastrand[fastrandidx])})
     );
     //Score is based on usefulness and is slightly random. Lowest score is removed first
     out.sort((a, b) => a.score - b.score);
@@ -444,7 +448,7 @@ Puzzle.prototype.fromDifficulty = function (difficulty) {
     let curTime = allHintsTime;
     let targetTime = curTime * (1 + difficulty ** 0.3);
     let best = {puz: null, time: 0};
-    while(fails < 100) {
+    while(fails < 20) {
         let savedHints = this.hintsPieces.slice();
         curTime = allHintsTime;
         let hints = this.getImportantHints();
