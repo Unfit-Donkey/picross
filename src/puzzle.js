@@ -431,12 +431,10 @@ Puzzle.prototype.getImportantHints = function () {
     let out = [];
     this.foreachHint(
         (cell, total, pieces, dimension, index) =>
-            out.push({index: index, info: this.size[dimension] - total - pieces, rand: Math.random()})
+            out.push({index: index, score: (this.size[dimension] - total - pieces + 5) * (1 + Math.random())})
     );
-    //Shuffle to prevent sequential hint removal
-    out.sort((a, b) => a.rand - b.rand);
-    //Then sort by usefulness
-    out.sort((a, b) => a.info - b.info);
+    //Score is based on usefulness and is slightly random. Lowest score is removed first
+    out.sort((a, b) => a.score - b.score);
     return out;
 }
 Puzzle.prototype.fromDifficulty = function (difficulty) {
