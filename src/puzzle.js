@@ -111,30 +111,6 @@ Puzzle.prototype.getVector = function (position) {
     return out;
 }
 //Extra data generation
-//Generate all hints for the entire puzzle (puzzle should not have indetermined pieces)
-Puzzle.prototype.generateHints = function () {
-    //Reset hint arrays
-    this.hintsPieces = new Array(this.maxFaceSize * this.dimension);
-    this.hintsPieces.fill(0, 0, this.hintsPieces.length);
-    this.hintsTotal = new Array(this.maxFaceSize * this.dimension);
-    this.hintsTotal.fill(0, 0, this.hintsTotal.length);
-    //Iterate through each hint
-    this.foreachHint((cell, t, p, dim, i) => {
-        let row = this.getRow(cell, dim);
-        //Count total and how many pieces its in
-        let total = 0, pieces = 0, prev = cell_broken;
-        for(let x = 0; x < row.length; x++) {
-            if(row[x] == cell_colored) {
-                total++;
-                if(prev == cell_broken) pieces++;
-            }
-            prev = row[x];
-        }
-        if(total == 0) pieces = 1;
-        this.hintsPieces[i + this.maxFaceSize * dim] = pieces;
-        this.hintsTotal[i + this.maxFaceSize * dim] = total;
-    });
-}
 //Generate visible sides of a 3d puzzle
 Puzzle.prototype.generateSidesVisible = function () {
     this.visibleSides = [];
@@ -239,15 +215,14 @@ Puzzle.prototype.generateActionableRows = function () {
 Puzzle.prototype.generateHints = function () {
     //Iterate through each row and create the hints
     this.foreachRow((row, index) => {
-        let pieces = 0;
-        let total = 0;
-        let prev = cell_broken;
-        row.forEach(v => {
-            if(v == cell_unsure) v = cell_colored;
-            if(v == cell_colored) total++;
-            if(v == cell_colored && prev == cell_broken) pieces++;
-            prev = v;
-        });
+        let pieces = 0, total = 0, prev = cell_broken;
+        for(let cell of row) {
+            if(cell == cell_unsure) cell = cell_colored;
+            if(cell == cell_colored) total++;
+            if(cell == cell_colored && prev == cell_broken) pieces++;
+            prev = cell;
+        }
+        if(total == 0) pieces = 1;
         this.hintsPieces[index] = pieces;
         this.hintsTotal[index] = total;
     });
