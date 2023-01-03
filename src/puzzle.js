@@ -356,6 +356,7 @@ Puzzle.fromBase64 = function (str) {
     }
     catch(e) {
         printError("Invalid puzzle");
+        throw e;
     }
 }
 //Solving functions

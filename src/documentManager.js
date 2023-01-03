@@ -38,12 +38,14 @@ const action = {
     set: _ => {
         try {
             fullPuzzle = Puzzle.fromBase64($("#puzzle_data").val());
+            $("#puzzle_data")[0].classList.remove("invalid_puzzle");
             if(gameMode == "player") {
                 solvedPuzzle = Puzzle.copy(fullPuzzle);
                 action.updateDifficulty();
             }
         }
         catch(e) {
+            $("#puzzle_data")[0].classList.add("invalid_puzzle");
             printError("Invalid puzzle");
             throw e;
         }

@@ -182,6 +182,10 @@ button:not(.option_button,.slicer_button):focus, input:focus {
     padding:0.5em 2em 0.5em 2em;
     width:10em;
 }
+.invalid_puzzle {
+    border: #990000 2px solid;
+    color:#990000;
+}
 .menu_close {
     position:absolute;
     top: 1em;
