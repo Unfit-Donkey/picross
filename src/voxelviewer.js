@@ -177,7 +177,7 @@ window.scene = {
     },
     //Create a texture for a specific number
     getTextTexture: function (total, pieces) {
-        let context = $("#textRender")[0].getContext("2d");
+        let context = $("#textRender")[0].getContext("2d", {willReadFrequently: true});
         context.clearRect(0, 0, 50, 50);
         const small = total >= 10 && pieces != 1;
         context.font = (small ? "30px" : "40px") + " Consolas";
