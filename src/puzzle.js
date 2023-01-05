@@ -341,7 +341,7 @@ Puzzle.prototype.bruteForceSolve = function () {
     //Loop through each row while there is still a change
     while(isChange) this.foreachRow((row, hintIndex) => {
         if(this.hintsPieces[hintIndex] == 0) return;
-        let newRow = RowSolve.solve(row, this.hintsTotal[hintIndex], this.hintsPieces[hintIndex]);
+        let newRow = RowSolve.solve(row, this.hintsTotal[hintIndex], this.hintsPieces[hintIndex]).row;
         if(newRow == null) return;
         isChange = true;
         this.setRow(hintIndex, newRow);
@@ -375,16 +375,16 @@ Puzzle.prototype.smartSolve = function () {
         let row = this.getRow(pos, dim);
         //Skip if solved already
         if(row.indexOf(3) == -1) continue;
-        complexity.rowComplexity += this.hintsTotal[rowId] + 2 * this.hintsPieces[rowId];
         if(this.hintsTotal[rowId] == 0) complexity.zeroes++;
         //Solve row
         let newRow = RowSolve.solve(row, this.hintsTotal[rowId], this.hintsPieces[rowId]);
-        if(newRow == null) continue;
+        if(newRow.row == null) continue;
+        complexity.rowComplexity += newRow.matches
         //Update cells in new row if it is different
         for(let i = 0; i < row.length; i++) {
-            if(row[i] == newRow[i]) continue;
+            if(row[i] == newRow.row[i]) continue;
             //Update cell
-            this.shape[pos + this.spacing[dim] * i] = newRow[i];
+            this.shape[pos + this.spacing[dim] * i] = newRow.row[i];
             //Add intersecting rows to list
             for(let x = 0; x < this.dimension; x++) {
                 let id = this.getHintPosition(pos + this.spacing[dim] * i, x);
@@ -400,7 +400,7 @@ Puzzle.prototype.smartSolve = function () {
     return complexity.size * 0.2 +
         complexity.rowChecks * 0.5 +
         complexity.rowComplexity * 0.3 -
-        complexity.zeroes * 0.3;
+        complexity.zeroes * 0.4;
     //Done!
 }
 const fr = Array.from({length: 101}, _ => Math.random());

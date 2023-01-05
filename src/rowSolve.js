@@ -22,18 +22,18 @@ RowSolve.solve = function (row, total, pieces) {
     if(pieces == 0) return null;
     let output = new Array(row.length);
     output.fill(0);
-    let isChange = false;
+    let matches = 0;
     let possibilities = RowSolve.possibilities(total, pieces, row.length);
     for(let possib of possibilities) {
         //If possibility is valid with current row, OR it with the current output
         if(RowSolve.RowMatches(row, possib)) {
-            isChange = true;
+            matches++;
             //OR the possilibity with the output
             for(let i in output) output[i] |= possib[i];
         }
     }
-    if(isChange) return output;
-    return null;
+    if(matches == 0) output = null;
+    return {matches: matches, row: output};
 }
 RowSolve.cache = [];
 RowSolve.cache.get = function (total, pieces, length) {
