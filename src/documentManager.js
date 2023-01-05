@@ -65,17 +65,17 @@ const action = {
         //Update puzzle time estimate
         $("#estimated_puzzle_time").html(timeText(fromDiff.time));
     },
-    finish: _ => {
+    finish: asUrl => {
         //Color unsure to colored
         fullPuzzle.foreachCell((cell, i) => fullPuzzle.shape[i] = (cell == cell_unsure ? cell_colored : cell));
         //Generate hints
         fullPuzzle.generateHints();
         //Encode and copy to clipboard
-        let encoding = puzzle.toBase64();
-        navigator.clipboard.writeText(
-            "https://benjamin-cates.github.io/picross/?play=" + encoding);
+        let encoding = fullPuzzle.toBase64();
+        navigator.clipboard.writeText(`${asUrl ? "https://benjamin-cates.github.io/picross/?play=" : ""}${encoding}`);
         //Show success message
-        printMessage("Puzzle url copied");
+        printMessage(`Puzzle ${asUrl ? "url " : ""}copied`);
+        scene.recreate();
     },
     open: _ => {
         if((data = $("#puzzle_data").val()) != "") {
