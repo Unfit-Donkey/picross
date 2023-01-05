@@ -37,8 +37,10 @@ const action = {
     },
     set: _ => {
         try {
-            fullPuzzle = Puzzle.fromBase64($("#puzzle_data").val());
             $("#puzzle_data")[0].classList.remove("invalid_puzzle");
+            let data = $("#puzzle_data").val();
+            if(data == "") return;
+            fullPuzzle = Puzzle.fromBase64(data);
             if(gameMode == "player") {
                 solvedPuzzle = Puzzle.copy(fullPuzzle);
                 action.updateDifficulty();
