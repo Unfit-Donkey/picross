@@ -38,14 +38,13 @@ RowSolve.solve = function (row, total, pieces) {
 RowSolve.cache = [];
 RowSolve.cache.get = function (total, pieces, length) {
     if(!this[length]) return null;
-    if(!this[length][pieces]) return null;
-    if(!this[length][pieces][total]) return null;
-    return this[length][pieces][total];
+    const hint = total + "_" + pieces;
+    if(!this[length][hint]) return null;
+    return this[length][hint];
 }
 RowSolve.cache.set = function (total, pieces, length, possib) {
     if(!this[length]) this[length] = [];
-    if(!this[length][pieces]) this[length][pieces] = [];
-    this[length][pieces][total] = possib;
+    this[length][total + "_" + pieces] = possib;
 }
 //Returns an array of row possibilities (with each row being an array of cells) output is NOT MUTABLE
 RowSolve.possibilities = function (total, pieces, length) {

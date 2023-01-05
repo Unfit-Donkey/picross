@@ -403,17 +403,18 @@ Puzzle.prototype.smartSolve = function () {
         complexity.zeroes * 0.3;
     //Done!
 }
-const fastrand = Array.from({length: 101}, _ => Math.random() + 2);
-let fastrandidx = 0;
-Puzzle.fastrand = fastrand;
+const fr = Array.from({length: 101}, _ => Math.random());
+let fridx = 0;
+Puzzle.fastrand = fr;
 Puzzle.prototype.getImportantHints = function () {
     let out = [];
-    this.foreachHint(
-        (cell, total, pieces, dimension, index) =>
-            out.push({index: index, score: (this.size[dimension] - total - pieces * 2 + 5) * (++fastrandidx >= fastrand.length ? fastrand[fastrandidx = 0] : fastrand[fastrandidx])})
-    );
-    //Score is based on usefulness and is slightly random. Lowest score is removed first
+    this.foreachHint((cell, total, pieces, dimension, index) => {
+        let score = RowSolve.possibilities(total, pieces, this.size[dimension]).length / this.size[dimension] / (3 + pieces);
+        out.push({index: index, score: score});
+    });
+    //Score is based on usefulness and is slightly random (lowest is most useful)
     out.sort((a, b) => a.score - b.score);
+    for(let i in out) out[i] = out[i].index;
     return out;
 }
 Puzzle.prototype.fromDifficulty = function (difficulty) {
@@ -423,15 +424,17 @@ Puzzle.prototype.fromDifficulty = function (difficulty) {
     let curTime = allHintsTime;
     let targetTime = curTime * (1 + difficulty ** 0.3);
     let best = {puz: null, time: 0};
+    const importantHints = this.getImportantHints();
     while(fails < 20) {
         let savedHints = this.hintsPieces.slice();
         curTime = allHintsTime;
-        let hints = this.getImportantHints();
+        let hints = importantHints.slice();
         //Slowly remove hints until the solve time reaches the target time
         while(curTime < targetTime) {
             if(hints.length == 0) break;
             this.shape.fill(cell_unsure);
-            let hintToRemove = hints.shift().index;
+            if((++fridx >= fr.length ? fr[fridx = 0] : fr[fridx]) > (1 - difficulty / 10) && hints.length != 1) hints.shift();
+            let hintToRemove = hints.shift();
             const hintTemp = this.hintsPieces[hintToRemove];
             this.hintsPieces[hintToRemove] = 0;
             let thisSolve = this.smartSolve();
