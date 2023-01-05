@@ -328,13 +328,13 @@ window.input = {
         input.onclick();
     },
     mousemove: function (e) {
-        if($("#main_menu").css("display") != "none") return;
-        e.preventDefault();
         input.pmouseX = input.mouseX;
         input.pmouseY = input.mouseY;
         let m = input.mouseGet(e, 0);
         input.mouseX = m.x;
         input.mouseY = m.y;
+        if($("#main_menu").css("display") != "none") {return;}
+        e.preventDefault();
         input.latestEvent = e;
         if(slicer.active) return slicer.drag();
         if(e.buttons & 1 == 1 || e.type == "touchmove") {
