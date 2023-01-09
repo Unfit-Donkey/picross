@@ -2,6 +2,7 @@ let gameMode = "mainMenu";
 function showMenu(id) {
     if(id == "none") {
         $("#main_menu").hide();
+        $("#puzzle_data").val("");
         return;
     }
     if(id == "guide")
