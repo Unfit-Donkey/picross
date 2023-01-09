@@ -60,12 +60,14 @@
                 </div>
                 <input type="text" id="puzzle_data" placeholder="eJxzSizOTFYoKK..." tabindex="101"
                        oninput="setTimeout(action.set)">
+                <button onclick="$('#puzzle_data').val('')">&times;</button>
+                <button onclick="navigator.clipboard.readText().then(str=>{$('#puzzle_data').val(str);action.set()})">Paste</button>
                 <!-- Difficulty enteror -->
                 <div class="player">
                     <input type="range" step="1" value="4" max="10" min="0" size="20" id="puzzle_difficulty"
                            oninput="action.diffInput();">
                     <div>
-                    Estimated time: <span id="estimated_puzzle_time"></span>
+                        Estimated time: <span id="estimated_puzzle_time"></span>
                     </div>
                 </div>
                 <!-- Axis size lists-->
@@ -78,8 +80,7 @@
                             <tr>
                                 <td><label for="puzzle_dimension">Dimensions: </label></td>
                                 <td><input type="number" min="1" placeholder="3" max="10"
-                                           oninput="updateAxisSizeList();" id="puzzle_dimension"
-                                           tabindex="105">
+                                           oninput="updateAxisSizeList();" id="puzzle_dimension" tabindex="105">
                                 </td>
 
                         </thead>
