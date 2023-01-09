@@ -42,6 +42,9 @@ const action = {
             if(data == "") return;
             fullPuzzle = Puzzle.fromBase64(data);
             if(gameMode == "player") {
+                //Generate hints if there are none
+                if(fullPuzzle.hintsPieces.every(v => (v == 0))) fullPuzzle.generateHints();
+                //Copy to solved puzzle and update the difficulty selector
                 solvedPuzzle = Puzzle.copy(fullPuzzle);
                 action.updateDifficulty();
             }
@@ -73,7 +76,7 @@ const action = {
         //Generate hints
         fullPuzzle.generateHints();
         //Encode and copy to clipboard
-        let encoding = fullPuzzle.toBase64();
+        let encoding = fullPuzzle.toBase64(false);
         navigator.clipboard.writeText(`${asUrl ? "https://benjamin-cates.github.io/picross/?play=" : ""}${encoding}`);
         //Show success message
         printMessage(`Puzzle ${asUrl ? "url " : ""}copied`);
@@ -124,7 +127,6 @@ window.PuzzleMeta = [
     {name: "metalness", placeholder: "0.5", default: 0.5, onchange: _ => scene.setPaintColor()},
     {name: "background", placeholder: "https://", default: null, onchange: _ => scene.setBackground()},
     {name: "roughness", placeholder: "0", default: 0, onchange: _ => scene.setPaintColor()},
-    {name: "difficulty", placeholder: "0.5", default: 0.5},
     {name: "name", placeholder: "Puzzle", default: "Puzzle"},
 ];
 function editMetadata(name, value) {

@@ -228,7 +228,7 @@ Puzzle.prototype.generateHints = function () {
     });
 }
 //Export functions
-Puzzle.prototype.toString = function () {
+Puzzle.prototype.toString = function (hints = true) {
     const A = 'A'.charCodeAt(0);
     //Sizes and dimension
     let out = this.dimension + "~"
@@ -236,7 +236,7 @@ Puzzle.prototype.toString = function () {
         //Shape
         + this.shape.map(cell => cell == cell_unsure ? "-" : (cell == cell_colored ? "+" : " ")).join("") + "~";
     //Hints
-    for(let i = 0; i < this.dimension; i++) {
+    if(hints) for(let i = 0; i < this.dimension; i++) {
         for(let x = 0; x < this.shapeSize / this.size[i]; x++) {
             let index = i * this.maxFaceSize + x;
             out += String.fromCharCode(A + this.hintsTotal[index], A + this.hintsPieces[index]);
@@ -288,8 +288,8 @@ Puzzle.prototype.toUintArray = function () {
     return out;
 }
 //Convert puzzle to a base64 string that can be shared
-Puzzle.prototype.toBase64 = function () {
-    let string = this.toString();
+Puzzle.prototype.toBase64 = function (hints = true) {
+    let string = this.toString(hints);
     return btoa(String.fromCharCode.apply(null, Pako.deflate(string)));
 }
 //Import functions
@@ -309,7 +309,13 @@ Puzzle.fromString = function (str) {
     puz.hintsTotal = new Array(puz.maxFaceSize * puz.dimension);
     puz.hintsPieces = new Array(puz.maxFaceSize * puz.dimension);
     let index = 0;
-    for(let dim = 0; dim < puz.dimension; dim++) {
+    if(strs[3].length == 0) {
+        //No hints in string
+        puz.hintsTotal.fill(0);
+        puz.hintsPieces.fill(0);
+    }
+    else for(let dim = 0; dim < puz.dimension; dim++) {
+        //Decode each hint
         for(let x = 0; x < puz.shapeSize / puz.size[dim]; x++) {
             let hintPos = dim * puz.maxFaceSize + x;
             puz.hintsTotal[hintPos] = strs[3].charCodeAt(index) - A;
